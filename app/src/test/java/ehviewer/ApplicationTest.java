@@ -1,4 +1,4 @@
-package com.hippo.ehviewer;
+package ehviewer;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;

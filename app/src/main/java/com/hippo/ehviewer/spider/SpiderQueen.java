@@ -107,7 +107,7 @@ public final class SpiderQueen implements Runnable {
     public static final int STATE_FAILED = 3;
     public static final int DECODE_THREAD_NUM = 2;
     public static final String SPIDER_INFO_FILENAME = ".ehviewer";
-//    public static final String SPIDER_INFO_BACKUP_FILENAME = ".ehviewer_backup";
+    public static final String SPIDER_INFO_BACKUP_FILENAME = ".ehviewer_backup";
 
     public static final String SPIDER_INFO_BACKUP_DIR = "backupDir";
     private static final String TAG = SpiderQueen.class.getSimpleName();

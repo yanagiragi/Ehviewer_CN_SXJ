@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.hippo.ehviewer;
+package ehviewer;
 
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
