@@ -970,20 +970,9 @@ public class ExternalDownloadsScene extends ToolbarScene
             return;
         }
 
-        /*
-        if (mLabel == null) {
-            mList = mDownloadManager.getDefaultDownloadInfoList();
-        } else {
-            mList = mDownloadManager.getLabelDownloadInfoList(mLabel);
-            if (mList == null) {
-                mLabel = null;
-                mList = mDownloadManager.getDefaultDownloadInfoList();
-            }
-        }
-        */
         // TODO: get list by label
         if (mList == null) {
-            mList = setupDummyList();
+            mList = setupDummyList(mLabel);
         }
 
         for (var downloadInfo: mList) {
@@ -1918,7 +1907,7 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     // endregion
 
-    private List<DownloadInfo> setupDummyList() {
+    private List<DownloadInfo> setupDummyList(String label) {
         var list = new ArrayList<DownloadInfo>();
         var rawJson = "{\"thumbHeight\":0,\"gid\":3048207,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://ehgt.org/b1/c6/b1c66dccd0456a0bb5df8a7d059774dca08a0dfd-3205013-2591-3624-jpg_250.jpg\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2}\n";
         var json = JSONObject.parseObject(rawJson);
