@@ -30,8 +30,10 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Display;
@@ -125,6 +127,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -1528,8 +1531,16 @@ public class ExternalDownloadsScene extends ToolbarScene
             }
 
             Intent intent = new Intent(activity, GalleryActivity.class);
-            intent.setAction(GalleryActivity.ACTION_EH);
-            intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(positionInList(position)));
+
+            // intent.setAction(GalleryActivity.ACTION_EH);
+            // intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(positionInList(position)));
+
+            intent.setAction(Intent.ACTION_VIEW);
+            var file = new File(Environment.getExternalStorageDirectory() + "/Download/1.zip");
+            var contentUri = Uri.fromFile(file);
+            System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
+            intent.setData(contentUri);
+
 //            startActivity(intent);
             galleryActivityLauncher.launch(intent);
             return true;
