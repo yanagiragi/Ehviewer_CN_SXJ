@@ -17,7 +17,6 @@
 package com.hippo.ehviewer.ui.scene.download;
 
 import static com.hippo.ehviewer.spider.SpiderDen.getGalleryDownloadDir;
-import static com.hippo.ehviewer.spider.SpiderInfo.getSpiderInfo;
 import static com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene.KEY_COME_FROM_DOWNLOAD;
 
 import android.annotation.SuppressLint;
@@ -31,10 +30,8 @@ import android.graphics.Point;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
-import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Display;
 import android.view.Gravity;
@@ -44,14 +41,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -62,14 +55,12 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.fastjson.parser.DefaultJSONParser;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.PointTarget;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
-import com.hippo.app.CheckBoxDialogBuilder;
 import com.hippo.conaco.DataContainer;
 import com.hippo.conaco.ProgressNotifier;
 import com.hippo.drawable.AddDeleteDrawable;
@@ -79,25 +70,17 @@ import com.hippo.easyrecyclerview.FastScroller;
 import com.hippo.easyrecyclerview.HandlerDrawable;
 import com.hippo.easyrecyclerview.MarginItemDecoration;
 import com.hippo.ehviewer.EhApplication;
-import com.hippo.ehviewer.EhDB;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.Settings;
-import com.hippo.ehviewer.callBack.DownloadSearchCallback;
 import com.hippo.ehviewer.client.EhCacheKeyFactory;
 import com.hippo.ehviewer.client.EhUtils;
-import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.dao.DownloadLabel;
 import com.hippo.ehviewer.dao.ExternalDownloadInfo;
-import com.hippo.ehviewer.download.DownloadManager;
 import com.hippo.ehviewer.download.DownloadService;
-import com.hippo.ehviewer.event.SomethingNeedRefresh;
 import com.hippo.ehviewer.spider.SpiderInfo;
-import com.hippo.ehviewer.sync.DownloadListInfosExecutor;
-import com.hippo.ehviewer.sync.DownloadSpiderInfoExecutor;
 import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
-import com.hippo.ehviewer.ui.annotation.ViewLifeCircle;
 import com.hippo.ehviewer.ui.scene.ToolbarScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.detail.ExternalGalleryDetailScene;
@@ -111,7 +94,6 @@ import com.hippo.scene.Announcer;
 import com.hippo.streampipe.InputStreamPipe;
 import com.hippo.unifile.UniFile;
 import com.hippo.util.DrawableManager;
-import com.hippo.util.IoThreadPoolExecutor;
 import com.hippo.view.ViewTransition;
 import com.hippo.widget.FabLayout;
 import com.hippo.widget.LoadImageView;
@@ -119,17 +101,13 @@ import com.hippo.widget.ProgressView;
 import com.hippo.widget.SearchBarMover;
 import com.hippo.widget.recyclerview.AutoStaggeredGridLayoutManager;
 import com.hippo.yorozuya.AssertUtils;
-import com.hippo.yorozuya.FileUtils;
 import com.hippo.yorozuya.IOUtils;
-import com.hippo.yorozuya.ObjectUtils;
 import com.hippo.yorozuya.ViewUtils;
 import com.hippo.yorozuya.collect.LongList;
 import com.sxj.paginationlib.PaginationIndicator;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
 
 import org.greenrobot.eventbus.EventBus;
-import org.greenrobot.eventbus.Subscribe;
-import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
 import java.io.IOException;
@@ -535,8 +513,6 @@ public class ExternalDownloadsScene extends ToolbarScene
     public String mLabel;
     @Nullable
     private List<ExternalDownloadInfo> mList;
-    @Nullable
-    private List<ExternalDownloadInfo> mBackList;
 
     /*---------------
      List pagination
@@ -784,9 +760,16 @@ public class ExternalDownloadsScene extends ToolbarScene
             return false;
         }
 
-        // TODO: Refresh mList
-        Toast.makeText(getEHContext(), R.string.page_menu_refresh, Toast.LENGTH_SHORT).show();
-        return true;
+        int id = item.getItemId();
+        if (id == R.id.search_download_gallery)
+        {
+            updateForLabel();
+        }
+        else {
+            Toast.makeText(getEHContext(), R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
+        }
+
+        return false;
     }
     // endregion
 
@@ -808,22 +791,15 @@ public class ExternalDownloadsScene extends ToolbarScene
     // region Public Methods
     @SuppressLint("NotifyDataSetChanged")
     public void updateForLabel() {
-        // TODO: get list by label
         if (mList == null) {
             mList = setupDummyList(mLabel);
-        }
-
-        for (var downloadInfo: mList) {
-            System.out.println(downloadInfo.toJson().toJSONString());
         }
 
         if (mAdapter != null) {
             mAdapter.notifyDataSetChanged();
         }
-        mBackList = mList;
         updateTitle();
         updatePaginationIndicator();
-        Settings.putRecentDownloadLabel(mLabel);
     }
 
     public void updateView() {
@@ -1288,7 +1264,7 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     private List<ExternalDownloadInfo> setupDummyList(String label) {
         var list = new ArrayList<ExternalDownloadInfo>();
-        var rawJson = "{\"thumbHeight\":0,\"gid\":0,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://p2.bahamut.com.tw/B/2KU/39/cf09f8fbe37d064b702d36c1a31qk1b5.WEBP?w=500\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2, \"size\": \"57.38 MiB\", \"language\": \"Japanese\"}\n";
+        var rawJson = "{\"thumbHeight\":0,\"gid\":0,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://p2.bahamut.com.tw/B/2KU/39/cf09f8fbe37d064b702d36c1a31qk1b5.WEBP?w=500\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2, \"size\": \"57.38 MiB\", \"language\": \"Japanese\", \"groupedTags\": [{ \"groupName\":  \"language\", \"tagList\": [ \"spanish\", \"translated\"] }, { \"groupName\":  \"female\", \"tagList\": [ \"big breasts\", \"bondage\"]}]}\n";
         var json = JSONObject.parseObject(rawJson);
         var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(json);
         list.add(newDownloadInfo);

@@ -1390,7 +1390,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             }
         } else if (mInfo == v) {
             Bundle args = new Bundle();
-            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, new GalleryDetail()); // TODO: fix parse dummy GalleryDetail
+            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo.galleryDetail);
             startScene(new Announcer(GalleryInfoScene.class).setArgs(args));
         } else if (mHeartGroup == v) {
             if (mGalleryDetail != null && !mModifingFavorites) {
