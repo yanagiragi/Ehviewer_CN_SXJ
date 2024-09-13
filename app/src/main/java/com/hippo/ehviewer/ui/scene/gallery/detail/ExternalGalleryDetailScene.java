@@ -1369,7 +1369,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             lub.setCategory(category);
             GalleryListScene.startScene(this, lub);
         } else if (mDownload == v) {
-           // do nothing
+            Toast.makeText(mContext, R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
         } else if (mHaveNewVersion == v) {
             if (mGalleryDetail == null) {
                 return;
