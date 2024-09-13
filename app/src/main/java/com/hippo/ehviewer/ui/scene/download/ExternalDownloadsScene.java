@@ -588,11 +588,6 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     private boolean needInitPage = false;
     private boolean needInitPageSize = false;
-    @NonNull
-    private final ActivityResultLauncher<Intent> galleryActivityLauncher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(),
-            this::updateReadProcess
-    );
 
     // endregion
 
@@ -877,7 +872,6 @@ public class ExternalDownloadsScene extends ToolbarScene
         updateTitle();
         updatePaginationIndicator();
         Settings.putRecentDownloadLabel(mLabel);
-        queryUnreadSpiderInfo();
     }
 
     public void updateView() {
@@ -1153,7 +1147,7 @@ public class ExternalDownloadsScene extends ToolbarScene
         Intent intent = new Intent(activity, GalleryActivity.class);
         intent.setAction(GalleryActivity.ACTION_EH);
         intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(position));
-        galleryActivityLauncher.launch(intent);
+        startActivity(intent);
     }
 
     private void bindForState(DownloadHolder holder, DownloadInfo info) {
@@ -1162,32 +1156,6 @@ public class ExternalDownloadsScene extends ToolbarScene
             return;
         }
 
-        switch (info.state) {
-            case DownloadInfo.STATE_NONE:
-                bindState(holder, info, resources.getString(R.string.download_state_none));
-                break;
-            case DownloadInfo.STATE_WAIT:
-                bindState(holder, info, resources.getString(R.string.download_state_wait));
-                break;
-            case DownloadInfo.STATE_DOWNLOAD:
-                bindProgress(holder, info);
-                break;
-            case DownloadInfo.STATE_FAILED:
-                String text;
-                if (info.legacy <= 0) {
-                    text = resources.getString(R.string.download_state_failed);
-                } else {
-                    text = resources.getString(R.string.download_state_failed_2, info.legacy);
-                }
-                bindState(holder, info, text);
-                break;
-            case DownloadInfo.STATE_FINISH:
-                bindState(holder, info, resources.getString(R.string.download_state_finish));
-                break;
-        }
-    }
-
-    private void bindState(DownloadHolder holder, DownloadInfo info, String state) {
         holder.uploader.setVisibility(View.VISIBLE);
         holder.rating.setVisibility(View.VISIBLE);
         holder.category.setVisibility(View.VISIBLE);
@@ -1196,118 +1164,9 @@ public class ExternalDownloadsScene extends ToolbarScene
         holder.progressBar.setVisibility(View.GONE);
         holder.percent.setVisibility(View.GONE);
         holder.speed.setVisibility(View.GONE);
-        if (info.state == DownloadInfo.STATE_WAIT || info.state == DownloadInfo.STATE_DOWNLOAD) {
-            holder.start.setVisibility(View.GONE);
-            holder.stop.setVisibility(View.VISIBLE);
-        } else {
-            holder.start.setVisibility(View.VISIBLE);
-            holder.stop.setVisibility(View.GONE);
-        }
-
-        holder.state.setText(state);
-    }
-
-    @SuppressLint("SetTextI18n")
-    private void bindProgress(DownloadHolder holder, DownloadInfo info) {
-        holder.uploader.setVisibility(View.GONE);
-        holder.rating.setVisibility(View.GONE);
-        holder.category.setVisibility(View.GONE);
-        holder.readProgress.setVisibility(View.GONE);
+        holder.start.setVisibility(View.GONE);
+        holder.stop.setVisibility(View.GONE);
         holder.state.setVisibility(View.GONE);
-        holder.progressBar.setVisibility(View.VISIBLE);
-        holder.percent.setVisibility(View.VISIBLE);
-        holder.speed.setVisibility(View.VISIBLE);
-        if (info.state == DownloadInfo.STATE_WAIT || info.state == DownloadInfo.STATE_DOWNLOAD) {
-            holder.start.setVisibility(View.GONE);
-            holder.stop.setVisibility(View.VISIBLE);
-        } else {
-            holder.start.setVisibility(View.VISIBLE);
-            holder.stop.setVisibility(View.GONE);
-        }
-
-        if (info.total <= 0 || info.finished < 0) {
-            holder.percent.setText(null);
-            holder.progressBar.setIndeterminate(true);
-        } else {
-            holder.percent.setText(info.finished + "/" + info.total);
-            holder.progressBar.setIndeterminate(false);
-            holder.progressBar.setMax(info.total);
-            holder.progressBar.setProgress(info.finished);
-        }
-        long speed = info.speed;
-        if (speed < 0) {
-            speed = 0;
-        }
-        holder.speed.setText(FileUtils.humanReadableByteCount(speed, false) + "/S");
-    }
-
-    private static void deleteFileAsync(UniFile... files) {
-        new AsyncTask<UniFile, Void, Void>() {
-            @Override
-            protected Void doInBackground(UniFile... params) {
-                for (UniFile file : params) {
-                    if (file != null) {
-                        file.delete();
-                    }
-                }
-                return null;
-            }
-        }.executeOnExecutor(IoThreadPoolExecutor.getInstance(), files);
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void updateReadProcess(ActivityResult result) {
-        if (result.getResultCode() == LOCAL_GALLERY_INFO_CHANGE) {
-            Intent data = result.getData();
-            if (data != null) {
-                GalleryInfo info = data.getParcelableExtra("info");
-                mSpiderInfoMap.remove(info.gid);
-                SpiderInfo spiderInfo = getSpiderInfo(info);
-                if (spiderInfo != null) {
-                    mSpiderInfoMap.put(info.gid, spiderInfo);
-                    int position = -1;
-                    if (mList == null || mAdapter == null) {
-                        return;
-                    }
-                    for (int i = 0; i < mList.size(); i++) {
-                        if (mList.get(i).gid == info.gid) {
-                            position = listIndexInPage(i);
-                            break;
-                        }
-                    }
-                    if (position != -1) {
-                        mAdapter.notifyItemChanged(position);
-                    } else {
-                        mAdapter.notifyDataSetChanged();
-                    }
-
-                }
-
-            }
-        }
-    }
-
-    private void queryUnreadSpiderInfo() {
-        if (mList == null) {
-            return;
-        }
-        List<DownloadInfo> requestList = new ArrayList<>();
-        for (int i = 0; i < mList.size(); i++) {
-            DownloadInfo info = mList.get(i);
-            if (!mSpiderInfoMap.containsKey(info.gid) || mSpiderInfoMap.get(info.gid) == null) {
-                requestList.add(info);
-            }
-        }
-        DownloadSpiderInfoExecutor executor = new DownloadSpiderInfoExecutor(requestList, this::spiderInfoResultCallBack);
-        executor.execute();
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private void spiderInfoResultCallBack(Map<Long, SpiderInfo> resultMap) {
-        mSpiderInfoMap.putAll(resultMap);
-        if (mAdapter != null) {
-            mAdapter.notifyDataSetChanged();
-        }
     }
 
     private void gotoFilterAndSort(int id) {
@@ -1328,7 +1187,6 @@ public class ExternalDownloadsScene extends ToolbarScene
             mRecyclerView.setAdapter(mAdapter);
         }
     }
-
 
     @SuppressLint("NotifyDataSetChanged")
     private void initPage(int position) {
@@ -1420,8 +1278,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
             intent.setData(contentUri);
 
-//            startActivity(intent);
-            galleryActivityLauncher.launch(intent);
+            startActivity(intent);
             return true;
         }
     }
