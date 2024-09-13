@@ -86,6 +86,7 @@ import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.dao.DownloadLabel;
+import com.hippo.ehviewer.dao.ExternalDownloadInfo;
 import com.hippo.ehviewer.download.DownloadManager;
 import com.hippo.ehviewer.download.DownloadService;
 import com.hippo.ehviewer.event.SomethingNeedRefresh;
@@ -97,6 +98,7 @@ import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.annotation.ViewLifeCircle;
 import com.hippo.ehviewer.ui.scene.ToolbarScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
+import com.hippo.ehviewer.ui.scene.gallery.detail.ExternalGalleryDetailScene;
 import com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene;
 import com.hippo.ehviewer.ui.scene.gallery.list.EnterGalleryDetailTransaction;
 import com.hippo.ehviewer.widget.SearchBar;
@@ -138,8 +140,7 @@ import java.util.List;
 import java.util.Map;
 
 public class ExternalDownloadsScene extends ToolbarScene
-        implements DownloadManager.DownloadInfoListener,
-        DownloadSearchCallback,
+        implements
         EasyRecyclerView.OnItemClickListener,
         EasyRecyclerView.OnItemLongClickListener,
         FabLayout.OnClickFabListener,
@@ -150,89 +151,6 @@ public class ExternalDownloadsScene extends ToolbarScene
         SearchBar.OnStateChangeListener {
 
     // region Definitions
-
-    private class DeleteDialogHelper implements DialogInterface.OnClickListener {
-
-        private final GalleryInfo mGalleryInfo;
-        private final CheckBoxDialogBuilder mBuilder;
-
-        public DeleteDialogHelper(GalleryInfo galleryInfo, CheckBoxDialogBuilder builder) {
-            mGalleryInfo = galleryInfo;
-            mBuilder = builder;
-        }
-
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-            if (which != DialogInterface.BUTTON_POSITIVE) {
-                return;
-            }
-
-            // Delete
-            if (null != mDownloadManager) {
-                mDownloadManager.deleteDownload(mGalleryInfo.gid);
-            }
-
-            // Delete image files
-            boolean checked = mBuilder.isChecked();
-            Settings.putRemoveImageFiles(checked);
-            if (checked) {
-                // Remove download path
-                EhDB.removeDownloadDirname(mGalleryInfo.gid);
-                // Delete file
-                UniFile file = getGalleryDownloadDir(mGalleryInfo);
-                deleteFileAsync(file);
-            }
-        }
-    }
-
-    private class DeleteRangeDialogHelper implements DialogInterface.OnClickListener {
-
-        private final List<DownloadInfo> mDownloadInfoList;
-        private final LongList mGidList;
-        private final CheckBoxDialogBuilder mBuilder;
-
-        public DeleteRangeDialogHelper(List<DownloadInfo> downloadInfoList,
-                                       LongList gidList, CheckBoxDialogBuilder builder) {
-            mDownloadInfoList = downloadInfoList;
-            mGidList = gidList;
-            mBuilder = builder;
-        }
-
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-            if (which != DialogInterface.BUTTON_POSITIVE) {
-                return;
-            }
-
-            // Cancel check mode
-            if (mRecyclerView != null) {
-                mRecyclerView.outOfCustomChoiceMode();
-            }
-
-            // Delete
-            if (null != mDownloadManager) {
-                mDownloadManager.deleteRangeDownload(mGidList);
-            }
-
-            // Delete image files
-            boolean checked = mBuilder.isChecked();
-            Settings.putRemoveImageFiles(checked);
-            if (checked) {
-                UniFile[] files = new UniFile[mDownloadInfoList.size()];
-                int i = 0;
-                for (DownloadInfo info : mDownloadInfoList) {
-                    // Remove download path
-                    EhDB.removeDownloadDirname(info.gid);
-                    // Put file
-                    files[i] = getGalleryDownloadDir(info);
-                    i++;
-                }
-                // Delete file
-                deleteFileAsync(files);
-            }
-        }
-    }
-
     private class MoveDialogHelper implements DialogInterface.OnClickListener {
 
         private final String[] mLabels;
@@ -313,7 +231,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             if (null == context || null == activity || null == recyclerView || recyclerView.isInCustomChoice()) {
                 return;
             }
-            List<DownloadInfo> list = mList;
+            List<ExternalDownloadInfo> list = mList;
             if (list == null) {
                 return;
             }
@@ -328,19 +246,15 @@ public class ExternalDownloadsScene extends ToolbarScene
                 args.putString(GalleryDetailScene.KEY_ACTION, GalleryDetailScene.ACTION_DOWNLOAD_GALLERY_INFO);
                 args.putParcelable(GalleryDetailScene.KEY_GALLERY_INFO, list.get(positionInList(index)));
                 args.putBoolean(KEY_COME_FROM_DOWNLOAD, true);
-                Announcer announcer = new Announcer(GalleryDetailScene.class).setArgs(args);
+                Announcer announcer = new Announcer(ExternalGalleryDetailScene.class).setArgs(args);
                 announcer.setTranHelper(new EnterGalleryDetailTransaction(thumb));
                 startScene(announcer);
             } else if (start == v) {
-                final DownloadInfo info = list.get(positionInList(index));
+                final ExternalDownloadInfo info = list.get(positionInList(index));
                 Intent intent = new Intent(activity, DownloadService.class);
                 intent.setAction(DownloadService.ACTION_START);
                 intent.putExtra(DownloadService.KEY_GALLERY_INFO, info);
                 activity.startService(intent);
-            } else if (stop == v) {
-                if (null != mDownloadManager) {
-                    mDownloadManager.stopDownload(list.get(positionInList(index)).gid);
-                }
             }
         }
     }
@@ -616,13 +530,11 @@ public class ExternalDownloadsScene extends ToolbarScene
          Whole life cycle
          ---------------*/
     @Nullable
-    private DownloadManager mDownloadManager;
-    @Nullable
     public String mLabel;
     @Nullable
-    private List<DownloadInfo> mList;
+    private List<ExternalDownloadInfo> mList;
     @Nullable
-    private List<DownloadInfo> mBackList;
+    private List<ExternalDownloadInfo> mBackList;
 
     /*---------------
      List pagination
@@ -696,8 +608,6 @@ public class ExternalDownloadsScene extends ToolbarScene
 
         Context context = getEHContext();
         AssertUtils.assertNotNull(context);
-        mDownloadManager = EhApplication.getDownloadManager(context);
-        mDownloadManager.addDownloadInfoListener(this);
         canPagination = Settings.getDownloadPagination();
         if (savedInstanceState == null) {
             onInit();
@@ -711,21 +621,6 @@ public class ExternalDownloadsScene extends ToolbarScene
         super.onDestroy();
         mList = null;
 
-        DownloadManager manager = mDownloadManager;
-        if (null == manager) {
-            Context context = getEHContext();
-            if (null != context) {
-                manager = EhApplication.getDownloadManager(context);
-            }
-        } else {
-            mDownloadManager = null;
-        }
-
-        if (null != manager) {
-            manager.removeDownloadInfoListener(this);
-        } else {
-            Log.e(TAG, "Can't removeDownloadInfoListener");
-        }
         mActionFabDrawable = null;
     }
 
@@ -892,9 +787,6 @@ public class ExternalDownloadsScene extends ToolbarScene
                 return true;
             }
             case R.id.action_stop_all: {
-                if (null != mDownloadManager) {
-                    mDownloadManager.stopAllDownload();
-                }
                 return true;
             }
             case R.id.action_reset_reading_progress: {
@@ -906,14 +798,14 @@ public class ExternalDownloadsScene extends ToolbarScene
                     Toast.makeText(context, R.string.download_searching, Toast.LENGTH_LONG).show();
                     return true;
                 }
-                new AlertDialog.Builder(context)
-                        .setMessage(R.string.reset_reading_progress_message)
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                            if (mDownloadManager != null) {
-                                mDownloadManager.resetAllReadingProgress();
-                            }
-                        }).show();
+                // new AlertDialog.Builder(context)
+                //         .setMessage(R.string.reset_reading_progress_message)
+                //         .setNegativeButton(android.R.string.cancel, null)
+                //         .setPositiveButton(android.R.string.ok, (dialog, which) -> {
+                //             if (mDownloadManager != null) {
+                //                 mDownloadManager.resetAllReadingProgress();
+                //             }
+                //         }).show();
                 return true;
             }
             case R.id.search_download_gallery: {
@@ -969,10 +861,6 @@ public class ExternalDownloadsScene extends ToolbarScene
     // region Public Methods
     @SuppressLint("NotifyDataSetChanged")
     public void updateForLabel() {
-        if (null == mDownloadManager) {
-            return;
-        }
-
         // TODO: get list by label
         if (mList == null) {
             mList = setupDummyList(mLabel);
@@ -1002,11 +890,6 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
     }
 
-    @Nullable
-    public DownloadManager getMDownloadManager() {
-        return mDownloadManager;
-    }
-
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void updateDownloadLabels(SomethingNeedRefresh somethingNeedRefresh) {
         if (somethingNeedRefresh.isDownloadLabelDrawNeed()) {
@@ -1032,11 +915,9 @@ public class ExternalDownloadsScene extends ToolbarScene
 
         updateForLabel();
 
-        DownloadListInfosExecutor executor = new DownloadListInfosExecutor(mList, searchKey);
-
-        executor.setDownloadSearchingListener(this);
-
-        executor.executeSearching();
+        // DownloadListInfosExecutor executor = new DownloadListInfosExecutor(mList, searchKey);
+        // executor.setDownloadSearchingListener(this);
+        // executor.executeSearching();
     }
     // endregion
 
@@ -1050,26 +931,26 @@ public class ExternalDownloadsScene extends ToolbarScene
             DownloadService.clear();
         }
 
-        long gid;
-        if (null != mDownloadManager && -1L != (gid = args.getLong(KEY_GID, -1L))) {
-            DownloadInfo info = mDownloadManager.getDownloadInfo(gid);
-            if (null != info) {
-                mLabel = info.getLabel();
-                updateForLabel();
-                updateView();
-
-                // Get position
-                if (null != mList) {
-                    int position = mList.indexOf(info);
-                    if (position >= 0 && null != mRecyclerView) {
-                        initPage(position);
-                    } else {
-                        mInitPosition = position;
-                    }
-                }
-                return true;
-            }
-        }
+        // long gid;
+        // if (null != mDownloadManager && -1L != (gid = args.getLong(KEY_GID, -1L))) {
+        //     DownloadInfo info = mDownloadManager.getDownloadInfo(gid);
+        //     if (null != info) {
+        //         mLabel = info.getLabel();
+        //         updateForLabel();
+        //         updateView();
+//
+        //         // Get position
+        //         if (null != mList) {
+        //             int position = mList.indexOf(info);
+        //             if (position >= 0 && null != mRecyclerView) {
+        //                 initPage(position);
+        //             } else {
+        //                 mInitPosition = position;
+        //             }
+        //         }
+        //         return true;
+        //     }
+        // }
         return false;
     }
 
@@ -1256,7 +1137,7 @@ public class ExternalDownloadsScene extends ToolbarScene
     }
 
     private void viewRandom() {
-        List<DownloadInfo> list = mList;
+        List<ExternalDownloadInfo> list = mList;
         if (list == null) {
             return;
         }
@@ -1435,11 +1316,9 @@ public class ExternalDownloadsScene extends ToolbarScene
             mRecyclerView.setVisibility(View.GONE);
         }
 
-        DownloadListInfosExecutor executor = new DownloadListInfosExecutor(mBackList, mDownloadManager);
-
-        executor.setDownloadSearchingListener(this);
-
-        executor.executeFilterAndSort(id);
+        // DownloadListInfosExecutor executor = new DownloadListInfosExecutor(mBackList, mDownloadManager);
+        // executor.setDownloadSearchingListener(this);
+        // executor.executeFilterAndSort(id);
     }
 
     private void updateAdapter() {
@@ -1522,7 +1401,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             recyclerView.toggleItemChecked(position);
             return true;
         } else {
-            List<DownloadInfo> list = mList;
+            List<ExternalDownloadInfo> list = mList;
             if (list == null) {
                 return false;
             }
@@ -1609,7 +1488,7 @@ public class ExternalDownloadsScene extends ToolbarScene
         if (0 == position) {
             recyclerView.checkAll();
         } else {
-            List<DownloadInfo> list = mList;
+            List<ExternalDownloadInfo> list = mList;
             if (list == null) {
                 return;
             }
@@ -1655,9 +1534,9 @@ public class ExternalDownloadsScene extends ToolbarScene
                     if (gidList.isEmpty()){
                         break;
                     }
-                    if (null != mDownloadManager) {
-                        mDownloadManager.stopRangeDownload(gidList);
-                    }
+                    // if (null != mDownloadManager) {
+                    //     mDownloadManager.stopRangeDownload(gidList);
+                    // }
                     // Cancel check mode
                     recyclerView.outOfCustomChoiceMode();
                     break;
@@ -1670,10 +1549,10 @@ public class ExternalDownloadsScene extends ToolbarScene
                             getString(R.string.download_remove_dialog_message_2, gidList.size()),
                             getString(R.string.download_remove_dialog_check_text),
                             Settings.getRemoveImageFiles());
-                    DeleteRangeDialogHelper helper = new DeleteRangeDialogHelper(
-                            downloadInfoList, gidList, builder);
+                    // DeleteRangeDialogHelper helper = new DeleteRangeDialogHelper(
+                    //         downloadInfoList, gidList, builder);
                     builder.setTitle(R.string.download_remove_dialog_title)
-                            .setPositiveButton(android.R.string.ok, helper)
+                            .setPositiveButton(android.R.string.ok, null) // do nothing
                             .show();
                     break;
                 }
@@ -1706,105 +1585,6 @@ public class ExternalDownloadsScene extends ToolbarScene
                     break;
             }
         }
-    }
-
-    // endregion
-
-    // region DownloadInfoListener Implements
-
-    @Override
-    public void onAdd(@NonNull DownloadInfo info, @NonNull List<DownloadInfo> list, int position) {
-        if (mList != list) {
-            return;
-        }
-        if (mAdapter != null) {
-            mAdapter.notifyItemInserted(position);
-        }
-        if (downloadLabelDraw!=null){
-            downloadLabelDraw.updateDownloadLabels();
-        }
-        updateView();
-    }
-
-    @Override
-    public void onReplace(@NonNull DownloadInfo newInfo, @NonNull DownloadInfo oldInfo) {
-        if (mList == null) {
-            return;
-        }
-        updateForLabel();
-        updateView();
-
-        int index = mList.indexOf(newInfo);
-        if (index >= 0 && mAdapter != null) {
-//            mSpiderInfoMap.put(info.gid,getSpiderInfo(info));
-            mAdapter.notifyItemChanged(listIndexInPage(index));
-        }
-        List<DownloadInfo> infos = new ArrayList<>();
-        infos.add(newInfo);
-        DownloadSpiderInfoExecutor executor = new DownloadSpiderInfoExecutor(infos, this::spiderInfoResultCallBack);
-        executor.execute();
-    }
-
-    @Override
-    public void onUpdate(@NonNull DownloadInfo info, @NonNull List<DownloadInfo> list, LinkedList<DownloadInfo> mWaitList) {
-        if (mList != list || !mList.contains(info)) {
-            return;
-        }
-        int index = mList.indexOf(info);
-        if (index >= 0 && mAdapter != null) {
-            mAdapter.notifyItemChanged(listIndexInPage(index));
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    @Override
-    public void onUpdateAll() {
-        if (mAdapter != null) {
-            mAdapter.notifyDataSetChanged();
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    @Override
-    public void onReload() {
-        if (mAdapter != null) {
-            mAdapter.notifyDataSetChanged();
-        }
-        updateView();
-    }
-
-    @Override
-    public void onChange() {
-        mLabel = null;
-        updateForLabel();
-        updateView();
-    }
-
-    @Override
-    public void onRenameLabel(String from, String to) {
-        if (!ObjectUtils.equal(mLabel, from)) {
-            return;
-        }
-
-        mLabel = to;
-        updateForLabel();
-        updateView();
-    }
-
-    @Override
-    public void onRemove(@NonNull DownloadInfo info, @NonNull List<DownloadInfo> list, int position) {
-        if (mList != list) {
-            return;
-        }
-        if (mAdapter != null) {
-            mAdapter.notifyItemRemoved(listIndexInPage(position));
-        }
-        updateView();
-    }
-
-    @Override
-    public void onUpdateLabels() {
-        // TODO
     }
 
     // endregion
@@ -1878,51 +1658,11 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     // endregion
 
-    // region DownloadSearchCallback
-
-    @Override
-    public void onDownloadSearchSuccess(List<DownloadInfo> list) {
-        mList = list;
-        updateAdapter();
-        mProgressView.setVisibility(View.GONE);
-        if (mRecyclerView != null) {
-            mRecyclerView.setVisibility(View.VISIBLE);
-        }
-        searching = false;
-        queryUnreadSpiderInfo();
-    }
-
-    @Override
-    public void onDownloadListHandleSuccess(List<DownloadInfo> list) {
-        mList = list;
-        updateAdapter();
-        mProgressView.setVisibility(View.GONE);
-        if (mRecyclerView != null) {
-            mRecyclerView.setVisibility(View.VISIBLE);
-        }
-        queryUnreadSpiderInfo();
-    }
-
-    @Override
-    public void onDownloadSearchFailed(List<DownloadInfo> list) {
-        Toast.makeText(getEHContext(), R.string.download_searching_failed, Toast.LENGTH_LONG).show();
-        mList = list;
-        updateAdapter();
-        mProgressView.setVisibility(View.GONE);
-        if (mRecyclerView != null) {
-            mRecyclerView.setVisibility(View.VISIBLE);
-        }
-        searching = false;
-        queryUnreadSpiderInfo();
-    }
-
-    // endregion
-
-    private List<DownloadInfo> setupDummyList(String label) {
-        var list = new ArrayList<DownloadInfo>();
-        var rawJson = "{\"thumbHeight\":0,\"gid\":3048207,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://ehgt.org/b1/c6/b1c66dccd0456a0bb5df8a7d059774dca08a0dfd-3205013-2591-3624-jpg_250.jpg\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2}\n";
+    private List<ExternalDownloadInfo> setupDummyList(String label) {
+        var list = new ArrayList<ExternalDownloadInfo>();
+        var rawJson = "{\"thumbHeight\":0,\"gid\":0,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://p2.bahamut.com.tw/B/2KU/39/cf09f8fbe37d064b702d36c1a31qk1b5.WEBP?w=500\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2, \"size\": \"57.38 MiB\", \"language\": \"Japanese\"}\n";
         var json = JSONObject.parseObject(rawJson);
-        var newDownloadInfo = new DownloadInfo().downloadInfoFromJson(json);
+        var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(json);
         list.add(newDownloadInfo);
         return list;
     }
