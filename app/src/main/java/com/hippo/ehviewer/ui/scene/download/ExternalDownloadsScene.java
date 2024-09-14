@@ -653,7 +653,7 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     @Override
     public int getMenuResId() {
-        return R.menu.scene_download;
+        return R.menu.scene_external_download;
     }
 
     @Nullable
@@ -722,15 +722,6 @@ public class ExternalDownloadsScene extends ToolbarScene
         fastScroller.setHandlerDrawable(handlerDrawable);
         fastScroller.setOnDragHandlerListener(this);
 
-        // Hide any float button except move button
-        FloatingActionButton moveButton = mFabLayout.getSecondaryFabAt(MOVE_BUTTON_INDEX);
-        for (int i = 0; i < mFabLayout.getSecondaryFabCount(); ++i) {
-            FloatingActionButton button = mFabLayout.getSecondaryFabAt(i);
-            if (button != moveButton) {
-                button.setVisibility(View.GONE);
-            }
-        }
-
         mFabLayout.setExpanded(false, true);
         mFabLayout.setHidePrimaryFab(false);
         mFabLayout.setAutoCancel(false);
@@ -754,14 +745,8 @@ public class ExternalDownloadsScene extends ToolbarScene
     @SuppressLint("NonConstantResourceId")
     @Override
     public boolean onMenuItemClick(MenuItem item) {
-        // Skip when in choice mode
-        Activity activity = getActivity2();
-        if (null == activity || null == mRecyclerView || mRecyclerView.isInCustomChoice()) {
-            return false;
-        }
-
         int id = item.getItemId();
-        if (id == R.id.search_download_gallery)
+        if (id == R.id.refresh_external_downloads)
         {
             updateForLabel();
         }
