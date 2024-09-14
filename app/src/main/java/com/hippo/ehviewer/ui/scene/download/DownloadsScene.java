@@ -20,7 +20,6 @@ import static com.hippo.ehviewer.spider.SpiderDen.getGalleryDownloadDir;
 import static com.hippo.ehviewer.spider.SpiderInfo.getSpiderInfo;
 import static com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene.KEY_COME_FROM_DOWNLOAD;
 
-import android.animation.Animator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -50,7 +49,6 @@ import android.widget.Toast;
 import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -74,6 +72,7 @@ import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.easyrecyclerview.FastScroller;
 import com.hippo.easyrecyclerview.HandlerDrawable;
 import com.hippo.easyrecyclerview.MarginItemDecoration;
+import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.EhDB;
 import com.hippo.ehviewer.R;
@@ -97,7 +96,6 @@ import com.hippo.ehviewer.ui.scene.ToolbarScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene;
 import com.hippo.ehviewer.ui.scene.gallery.list.EnterGalleryDetailTransaction;
-import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.ehviewer.widget.SearchBar;
 import com.hippo.ehviewer.widget.SimpleRatingView;
 import com.hippo.io.UniFileInputStreamPipe;
@@ -107,18 +105,17 @@ import com.hippo.streampipe.InputStreamPipe;
 import com.hippo.unifile.UniFile;
 import com.hippo.util.DrawableManager;
 import com.hippo.util.IoThreadPoolExecutor;
+import com.hippo.util.ReadableTime;
 import com.hippo.view.ViewTransition;
 import com.hippo.widget.FabLayout;
 import com.hippo.widget.LoadImageView;
 import com.hippo.widget.ProgressView;
 import com.hippo.widget.SearchBarMover;
 import com.hippo.widget.recyclerview.AutoStaggeredGridLayoutManager;
-import com.hippo.yorozuya.AnimationUtils;
 import com.hippo.yorozuya.AssertUtils;
 import com.hippo.yorozuya.FileUtils;
 import com.hippo.yorozuya.IOUtils;
 import com.hippo.yorozuya.ObjectUtils;
-import com.hippo.yorozuya.SimpleAnimatorListener;
 import com.hippo.yorozuya.ViewUtils;
 import com.hippo.yorozuya.collect.LongList;
 import com.sxj.paginationlib.PaginationIndicator;
@@ -128,11 +125,11 @@ import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -157,6 +154,14 @@ public class DownloadsScene extends ToolbarScene
     public static final int LOCAL_GALLERY_INFO_CHANGE = 909;
 
     private static final long ANIMATE_TIME = 300L;
+
+    private static final int FLOATING_BUTTON_CHECK_ALL_INDEX = 0;
+    private static final int FLOATING_BUTTON_START_INDEX = 1;
+    private static final int FLOATING_BUTTON_STOP_INDEX = 2;
+    private static final int FLOATING_BUTTON_DELETE_INDEX = 3;
+    private static final int FLOATING_BUTTON_MOVE_INDEX = 4;
+    private static final int FLOATING_BUTTON_RANDOM_INDEX = 5;
+    private static final int FLOATING_BUTTON_EXPORT_INDEX = 6;
 
     @Nullable
     private AddDeleteDrawable mActionFabDrawable;
@@ -853,7 +858,7 @@ public class DownloadsScene extends ToolbarScene
             return;
         }
 
-        if (0 == position) {
+        if (FLOATING_BUTTON_CHECK_ALL_INDEX == position) {
             recyclerView.checkAll();
         } else {
             List<DownloadInfo> list = mList;
@@ -886,7 +891,7 @@ public class DownloadsScene extends ToolbarScene
             }
 
             switch (position) {
-                case 1: { // Start
+                case FLOATING_BUTTON_START_INDEX: { // Start
                     if (gidList.isEmpty()){
                         break;
                     }
@@ -898,7 +903,7 @@ public class DownloadsScene extends ToolbarScene
                     recyclerView.outOfCustomChoiceMode();
                     break;
                 }
-                case 2: { // Stop
+                case FLOATING_BUTTON_STOP_INDEX: { // Stop
                     if (gidList.isEmpty()){
                         break;
                     }
@@ -909,7 +914,7 @@ public class DownloadsScene extends ToolbarScene
                     recyclerView.outOfCustomChoiceMode();
                     break;
                 }
-                case 3: { // Delete
+                case FLOATING_BUTTON_DELETE_INDEX: { // Delete
                     if (downloadInfoList.isEmpty()){
                         break;
                     }
@@ -924,7 +929,7 @@ public class DownloadsScene extends ToolbarScene
                             .show();
                     break;
                 }
-                case 4: {// Move
+                case FLOATING_BUTTON_MOVE_INDEX: { // Move
                     if (downloadInfoList.isEmpty()){
                         break;
                     }
@@ -944,13 +949,21 @@ public class DownloadsScene extends ToolbarScene
                             .show();
                     break;
                 }
-                case 5:
+                case FLOATING_BUTTON_RANDOM_INDEX: { // random
                     if (mList == null || mList.isEmpty()) {
                         return;
                     }
-                    onClickPrimaryFab(mFabLayout,null);
+                    onClickPrimaryFab(mFabLayout, null);
                     viewRandom();
                     break;
+                }
+                case FLOATING_BUTTON_EXPORT_INDEX: { // export
+                    if (mList == null || mList.isEmpty()) {
+                        return;
+                    }
+                    exportGalleryInfo();
+                    break;
+                }
             }
         }
     }
@@ -973,6 +986,41 @@ public class DownloadsScene extends ToolbarScene
         intent.setAction(GalleryActivity.ACTION_EH);
         intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(position));
         galleryActivityLauncher.launch(intent);
+    }
+
+    private void exportGalleryInfo() {
+        String output = "[";
+        for (var i = 0; i < mList.size(); ++i) {
+            var downloadInfo = mList.get(i);
+            output += downloadInfo.toJson().toJSONString();
+            if (i != (mList.size() - 1)) {
+                output += ",";
+            }
+        }
+        output += "]";
+
+        File dir = AppConfig.getExternalDataDir();
+        File file = new File(dir, ReadableTime.getFilenamableTime(System.currentTimeMillis()) + "_downloads_exports.json");
+
+        FileWriter os = null;
+        try {
+            os = new FileWriter(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try {
+            os.write(output);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            IOUtils.closeQuietly(os);
+        }
+
+        var readablePath = file.getPath();
+        var startIndex = readablePath.indexOf("EhViewer");
+        readablePath = readablePath.substring(startIndex);
+        Toast.makeText(getContext(), "Exported to " + readablePath, Toast.LENGTH_SHORT).show();
     }
 
     @Override
