@@ -32,6 +32,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Display;
@@ -1017,9 +1018,7 @@ public class DownloadsScene extends ToolbarScene
             IOUtils.closeQuietly(os);
         }
 
-        var readablePath = file.getPath();
-        var startIndex = readablePath.indexOf("EhViewer");
-        readablePath = readablePath.substring(startIndex);
+        var readablePath = file.getPath().replace(Environment.getExternalStorageDirectory().getPath(), "");
         Toast.makeText(getContext(), "Exported to " + readablePath, Toast.LENGTH_SHORT).show();
     }
 
