@@ -42,6 +42,7 @@ public class AppConfig {
     private static final String LOGCAT = "logcat";
     private static final String DATA = "data";
     private static final String CRASH = "crash";
+    private static final String EXTERNAL_DOWNLOAD  = "external_download";
 
     @SuppressLint("StaticFieldLeak")
     private static Context sContext;
@@ -85,6 +86,11 @@ public class AppConfig {
     @Nullable
     public static File getDefaultDownloadDir() {
         return getDirInExternalAppDir(DOWNLOAD);
+    }
+
+    @Nullable
+    public static File getDefaultExternalDownloadDir() {
+        return getDirInExternalAppDir(EXTERNAL_DOWNLOAD);
     }
 
     @Nullable

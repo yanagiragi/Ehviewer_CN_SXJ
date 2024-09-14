@@ -228,6 +228,7 @@
     <string name="gallery_list_time_jump_dialog_title">Jump Selector</string>
     <string name="gallery_list_time_jump_dialog_found_message">Found %s Results</string>
     <string name="gallery_tag_copy">tag copied</string>
+    <string name="unable_to_read_external_downloads_configs">Unable to read external download configs</string>
 
     <string name="search">Search</string>
 

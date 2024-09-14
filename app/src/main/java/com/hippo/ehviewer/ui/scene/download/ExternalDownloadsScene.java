@@ -32,6 +32,7 @@ import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Display;
 import android.view.Gravity;
@@ -54,6 +55,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
@@ -69,6 +71,7 @@ import com.hippo.easyrecyclerview.EasyRecyclerView;
 import com.hippo.easyrecyclerview.FastScroller;
 import com.hippo.easyrecyclerview.HandlerDrawable;
 import com.hippo.easyrecyclerview.MarginItemDecoration;
+import com.hippo.ehviewer.AppConfig;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.Settings;
@@ -101,6 +104,7 @@ import com.hippo.widget.ProgressView;
 import com.hippo.widget.SearchBarMover;
 import com.hippo.widget.recyclerview.AutoStaggeredGridLayoutManager;
 import com.hippo.yorozuya.AssertUtils;
+import com.hippo.yorozuya.FileUtils;
 import com.hippo.yorozuya.IOUtils;
 import com.hippo.yorozuya.ViewUtils;
 import com.hippo.yorozuya.collect.LongList;
@@ -110,10 +114,13 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -1247,12 +1254,48 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     // endregion
 
-    private List<ExternalDownloadInfo> setupDummyList(String label) {
+    private List<ExternalDownloadInfo> readInfoJson(String label) {
         var list = new ArrayList<ExternalDownloadInfo>();
+
+        File dir = AppConfig.getDefaultExternalDownloadDir();
+        File[] files = dir.listFiles();
+        File jsonFile = null;
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].getName().contains(".json")) {
+                jsonFile = files[i];
+                break;
+            }
+        }
+
+        if (jsonFile == null) {
+            Toast.makeText(getContext(), R.string.unable_to_read_external_downloads_configs, Toast.LENGTH_SHORT).show(); // TODO: use R.String later
+            return list;
+        }
+        else {
+            Log.i(TAG, "Use " + jsonFile.getPath());
+        }
+
+        var content = FileUtils.read(jsonFile);
+        var json = JSONArray.parseArray(content);
+        for (int i = 0; i < json.size(); i++) {
+            var element = json.getJSONObject(i);
+            var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(element);
+            list.add(newDownloadInfo);
+        }
+
+        return list;
+    }
+
+    private List<ExternalDownloadInfo> setupDummyList(String label) {
+
+        // test code here
+        return readInfoJson(label);
+
+        /*var list = new ArrayList<ExternalDownloadInfo>();
         var rawJson = "{\"thumbHeight\":0,\"gid\":0,\"spanIndex\":0,\"legacy\":-1,\"thumb\":\"https://p2.bahamut.com.tw/B/2KU/39/cf09f8fbe37d064b702d36c1a31qk1b5.WEBP?w=500\",\"rating\":1.5,\"title\":\"[OrangeMaru (JP06)] Choco-Katsu (THE iDOLM@STER: Shiny Colors) [Chinese] [Digital]\",\"speed\":3420,\"posted\":\"2024-09-05 12:28\",\"total\":26,\"simpleLanguage\":\"ZH\",\"pages\":0,\"uploader\":\"quanbuzhineng\",\"state\":2,\"favoriteSlot\":-2,\"finished\":1,\"thumbWidth\":0,\"downloaded\":1,\"spanGroupIndex\":0,\"remaining\":-1,\"token\":\"d7d5f72e89\",\"rated\":false,\"tgList\":[null],\"spanSize\":0,\"time\":1725546708167,\"category\":2, \"size\": \"57.38 MiB\", \"language\": \"Japanese\", \"groupedTags\": [{ \"groupName\":  \"language\", \"tagList\": [ \"spanish\", \"translated\"] }, { \"groupName\":  \"female\", \"tagList\": [ \"big breasts\", \"bondage\"]}]}\n";
         var json = JSONObject.parseObject(rawJson);
         var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(json);
         list.add(newDownloadInfo);
-        return list;
+        return list;*/
     }
 }
