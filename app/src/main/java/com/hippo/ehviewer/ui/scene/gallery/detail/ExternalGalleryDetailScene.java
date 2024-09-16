@@ -68,7 +68,6 @@ import com.hippo.ehviewer.client.EhTagDatabase;
 import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.client.data.GalleryComment;
-import com.hippo.ehviewer.client.data.GalleryCommentList;
 import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
@@ -81,10 +80,8 @@ import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.scene.BaseScene;
 import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
 import com.hippo.ehviewer.ui.scene.FavoritesScene;
-import com.hippo.ehviewer.ui.scene.GalleryCommentsScene;
 import com.hippo.ehviewer.ui.scene.GalleryInfoScene;
 import com.hippo.ehviewer.ui.scene.GalleryPreviewsScene;
-import com.hippo.ehviewer.ui.scene.download.ExternalDownloadsScene;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
@@ -275,8 +272,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     private long mGid;
     private String mToken;
 
-    @Nullable
-    private GalleryDetail mGalleryDetail;
     private int mRequestId = IntIdGenerator.INVALID_ID;
 
     @Nullable
@@ -303,7 +298,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             mGalleryInfo = savedInstanceState.getParcelable(KEY_GALLERY_INFO);
             mGid = savedInstanceState.getLong(KEY_GID);
             mToken = savedInstanceState.getString(KEY_TOKEN);
-            mGalleryDetail = savedInstanceState.getParcelable(KEY_GALLERY_DETAIL);
             mRequestId = savedInstanceState.getInt(KEY_REQUEST_ID);
         }
 
@@ -326,14 +320,13 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         }
         if (mGalleryInfo != null) {
             outState.putParcelable(KEY_GALLERY_INFO, mGalleryInfo);
+            outState.putParcelable(KEY_GALLERY_DETAIL, mGalleryInfo.ToGalleryDetail());
         }
         outState.putLong(KEY_GID, mGid);
         if (mToken != null) {
             outState.putString(KEY_TOKEN, mAction);
         }
-        if (mGalleryDetail != null) {
-            outState.putParcelable(KEY_GALLERY_DETAIL, mGalleryDetail);
-        }
+
         outState.putInt(KEY_REQUEST_ID, mRequestId);
     }
 
@@ -412,24 +405,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         }
         finish();
     }
-
-    @Override
-    protected void onSceneResult(int requestCode, int resultCode, Bundle data) {
-        if (requestCode == REQUEST_CODE_COMMENT_GALLERY) {
-            if (resultCode != RESULT_OK || data == null) {
-                return;
-            }
-            GalleryCommentList comments = data.getParcelable(GalleryCommentsScene.KEY_COMMENT_LIST);
-            if (mGalleryDetail == null || comments == null) {
-                return;
-            }
-            mGalleryDetail.comments = comments;
-            bindComments(comments.comments);
-        } else {
-            super.onSceneResult(requestCode, resultCode, data);
-        }
-    }
-
 
     // endregion
 
@@ -614,34 +589,23 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             }
         } else if (mInfo == v) {
             Bundle args = new Bundle();
-            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo);
+            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo.ToGalleryDetail());
             startScene(new Announcer(GalleryInfoScene.class).setArgs(args));
         } else if (mSimilar == v) {
             showSimilarGalleryList();
         } else if (mSearchCover == v) {
             showCoverGalleryList();
         } else if (mComments == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            Bundle args = new Bundle();
-            args.putLong(GalleryCommentsScene.KEY_API_UID, mGalleryDetail.apiUid);
-            args.putString(GalleryCommentsScene.KEY_API_KEY, mGalleryDetail.apiKey);
-            args.putLong(GalleryCommentsScene.KEY_GID, mGalleryDetail.gid);
-            args.putString(GalleryCommentsScene.KEY_TOKEN, mGalleryDetail.token);
-            args.putParcelable(GalleryCommentsScene.KEY_COMMENT_LIST, mGalleryDetail.comments);
-            startScene(new Announcer(GalleryCommentsScene.class)
-                    .setArgs(args)
-                    .setRequestCode(this, REQUEST_CODE_COMMENT_GALLERY));
+            Toast.makeText(getEHContext(), R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
         } else if (mPreviews == v) {
-            if (null != mGalleryDetail) {
+            if (null != mGalleryInfo) {
                 Bundle args = new Bundle();
-                args.putParcelable(GalleryPreviewsScene.KEY_GALLERY_INFO, mGalleryDetail);
+                args.putParcelable(GalleryPreviewsScene.KEY_GALLERY_INFO, mGalleryInfo.ToGalleryDetail());
                 startScene(new Announcer(GalleryPreviewsScene.class).setArgs(args));
             }
         } else if (mTitle == v) {
-            if (mGalleryDetail != null && mGalleryDetail.title != null) {
-                ClipboardUtil.copyText(mGalleryDetail.title);
+            if (mGalleryInfo != null && mGalleryInfo.title != null) {
+                ClipboardUtil.copyText(mGalleryInfo.title);
                 Toast.makeText(getContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
             }
         } else {
@@ -730,18 +694,22 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     private String getGalleryDetailUrl() {
         long gid;
         String token;
-        if (mGalleryDetail != null) {
-            gid = mGalleryDetail.gid;
-            token = mGalleryDetail.token;
-        } else if (mGalleryInfo != null) {
-            gid = mGalleryInfo.gid;
-            token = mGalleryInfo.token;
-        } else if (ACTION_GID_TOKEN.equals(mAction)) {
-            gid = mGid;
-            token = mToken;
+
+        GalleryInfo galleryInfo = getGalleryInfo();
+
+        if (galleryInfo == null) {
+            if (ACTION_GID_TOKEN.equals(mAction)) {
+                gid = mGid;
+                token = mToken;
+            }
+            else {
+                return null;
+            }
         } else {
-            return null;
+            gid = galleryInfo.gid;
+            token = galleryInfo.token;
         }
+
         return EhUrl.getGalleryDetailUrl(gid, token, 0, false);
     }
 
@@ -774,9 +742,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     }
 
     private GalleryInfo getGalleryInfo() {
-        if (null != mGalleryDetail) {
-            return mGalleryDetail;
-        } else if (null != mGalleryInfo) {
+        if (null != mGalleryInfo) {
             return mGalleryInfo;
         } else {
             return null;
@@ -1157,7 +1123,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     }
 
     private void showSimilarGalleryList() {
-        GalleryDetail gd = mGalleryDetail;
+        var gd = mGalleryInfo;
         if (null == gd) {
             return;
         }
