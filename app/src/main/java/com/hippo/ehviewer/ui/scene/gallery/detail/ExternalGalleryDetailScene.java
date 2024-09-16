@@ -16,6 +16,7 @@
 
 package com.hippo.ehviewer.ui.scene.gallery.detail;
 
+import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
 import static com.hippo.ehviewer.client.EhClient.TAG;
 
 import android.annotation.SuppressLint;
@@ -256,8 +257,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     @Nullable
     private TextView mDownload;
     @Nullable
-    private TextView mHaveNewVersion;
-    @Nullable
     private View mRead;
     // Below header
     @Nullable
@@ -431,7 +430,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mOtherActions = null;
         mActionGroup = null;
         mDownload = null;
-        mHaveNewVersion = null;
         mRead = null;
         mBelowHeader = null;
 
@@ -576,7 +574,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mOtherActions = (ImageView) ViewUtils.$$(mHeader, R.id.other_actions);
         mActionGroup = (ViewGroup) ViewUtils.$$(mHeader, R.id.action_card);
         mDownload = (TextView) ViewUtils.$$(mActionGroup, R.id.download);
-        mHaveNewVersion = (TextView) ViewUtils.$$(mHeader, R.id.new_version);
         mRead = ViewUtils.$$(mActionGroup, R.id.read);
         Ripple.addRipple(mOtherActions, isDarkTheme);
         Ripple.addRipple(mDownload, isDarkTheme);
@@ -586,7 +583,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mOtherActions.setOnClickListener(this);
         mDownload.setOnClickListener(this);
         mDownload.setOnLongClickListener(this);
-        mHaveNewVersion.setOnClickListener(this);
         mRead.setOnClickListener(this);
         mTitle.setOnClickListener(this);
 
@@ -681,20 +677,14 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             GalleryListScene.startScene(this, lub);
         } else if (mDownload == v) {
             Toast.makeText(mContext, R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
-        } else if (mHaveNewVersion == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            // myUpdateDialog.showSelectDialog(mGalleryDetail);
         } else if (mRead == v) {
             GalleryInfo galleryInfo = getGalleryInfo();
             if (galleryInfo != null) {
+                var file = new File(getDefaultExternalDownloadDir() + "/" + mGalleryInfo.localPath);
+                var contentUri = Uri.fromFile(file);
 
                 Intent intent = new Intent(activity, GalleryActivity.class);
                 intent.setAction(Intent.ACTION_VIEW);
-                var file = new File(Environment.getExternalStorageDirectory() + "/Download/1.zip");
-                var contentUri = Uri.fromFile(file);
-                System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
                 intent.setData(contentUri);
 
                 startActivity(intent);

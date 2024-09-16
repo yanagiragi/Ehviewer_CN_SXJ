@@ -16,6 +16,7 @@
 
 package com.hippo.ehviewer.ui.scene.download;
 
+import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
 import static com.hippo.ehviewer.spider.SpiderDen.getGalleryDownloadDir;
 import static com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene.KEY_COME_FROM_DOWNLOAD;
 
@@ -1096,18 +1097,15 @@ public class ExternalDownloadsScene extends ToolbarScene
                 return false;
             }
 
-            Intent intent = new Intent(activity, GalleryActivity.class);
-
-            // intent.setAction(GalleryActivity.ACTION_EH);
-            // intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(positionInList(position)));
-
-            intent.setAction(Intent.ACTION_VIEW);
-            var file = new File(Environment.getExternalStorageDirectory() + "/Download/1.zip");
+            var info = list.get(positionInList(position));
+            var file = new File(getDefaultExternalDownloadDir() + "/" + info.localPath);
             var contentUri = Uri.fromFile(file);
-            System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
-            intent.setData(contentUri);
 
+            Intent intent = new Intent(activity, GalleryActivity.class);
+            intent.setAction(Intent.ACTION_VIEW);
+            intent.setData(contentUri);
             startActivity(intent);
+
             return true;
         }
     }

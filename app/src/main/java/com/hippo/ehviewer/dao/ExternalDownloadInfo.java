@@ -16,6 +16,7 @@ public class ExternalDownloadInfo extends DownloadInfo
     public String size;
     public GalleryTagGroup[] tags;
     public GalleryDetail galleryDetail;
+    public String localPath;
 
     public static ExternalDownloadInfo externalDownloadInfoFromJson(JSONObject object) throws ClassCastException {
         ExternalDownloadInfo info = new ExternalDownloadInfo ();
@@ -31,6 +32,7 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.total = object.getIntValue("total");
         info.language = object.getString("language");
         info.size = object.getString("size");
+        info.localPath = object.getString("localPath");
         info.galleryDetail = new GalleryDetail();
 
         JSONArray groupedTags = object.getJSONArray("groupedTags");
