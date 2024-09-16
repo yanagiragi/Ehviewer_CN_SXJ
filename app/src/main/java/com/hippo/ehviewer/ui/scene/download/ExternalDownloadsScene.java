@@ -32,7 +32,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.Display;
@@ -297,9 +296,7 @@ public class ExternalDownloadsScene extends ToolbarScene
                 DownloadInfo info = mList.get(pos);
 
                 String title = EhUtils.getSuitableTitle(info);
-
-                holder.thumb.load(EhCacheKeyFactory.getThumbKey(info.gid), info.thumb,
-                        new ThumbDataContainer(info), true);
+                holder.thumb.load(EhCacheKeyFactory.getExternalThumbKey(info.gid, info.thumb), info.thumb, new ThumbDataContainer(info), info.thumb.startsWith("http"));
 
                 holder.title.setText(title);
                 holder.uploader.setText(info.uploader);
@@ -392,9 +389,15 @@ public class ExternalDownloadsScene extends ToolbarScene
 
         private void ensureFile() {
             if (mFile == null) {
-                UniFile dir = getGalleryDownloadDir(mInfo);
-                if (dir != null && dir.isDirectory()) {
-                    mFile = dir.createFile(".thumb");
+                if (mInfo.thumb.startsWith("http")) {
+                    var externalDownloadDir = getDefaultExternalDownloadDir();
+                    var dir = UniFile.fromFile(new File(externalDownloadDir + "/" + ".thumbnail"));
+                    dir.ensureDir();
+
+                    mFile = dir.createFile(mInfo.gid + "_" + mInfo.thumb.hashCode() + ".thumb");
+                }
+                else {
+                    mFile = UniFile.fromFile(new File(mInfo.thumb));
                 }
             }
         }
@@ -1056,7 +1059,7 @@ public class ExternalDownloadsScene extends ToolbarScene
     private List<ExternalDownloadInfo> readInfoJson(String label) {
         var list = new ArrayList<ExternalDownloadInfo>();
 
-        File dir = AppConfig.getDefaultExternalDownloadDir();
+        File dir = getDefaultExternalDownloadDir();
         File[] files = dir.listFiles();
         File jsonFile = null;
         for (int i = 0; i < files.length; i++) {
@@ -1080,7 +1083,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             var element = json.getJSONObject(i);
             var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(element);
 
-            var file = new File(newDownloadInfo.absolutePath);
+            var file = new File(newDownloadInfo.filePath);
             if (file.exists()) {
                 list.add(newDownloadInfo);
             }
@@ -1132,7 +1135,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             }
 
             var info = list.get(positionInList(position));
-            var file = new File(info.absolutePath);
+            var file = new File(info.filePath);
             var contentUri = Uri.fromFile(file);
 
             Intent intent = new Intent(activity, GalleryActivity.class);

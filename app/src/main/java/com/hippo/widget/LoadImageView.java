@@ -16,6 +16,8 @@
 
 package com.hippo.widget;
 
+import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
+
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Color;
@@ -23,6 +25,7 @@ import android.graphics.drawable.Animatable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -39,11 +42,19 @@ import com.hippo.conaco.Unikery;
 import com.hippo.drawable.PreciselyClipDrawable;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.R;
+import com.hippo.image.Image;
 import com.hippo.image.ImageBitmap;
 import com.hippo.image.ImageDrawable;
 import com.hippo.image.RecycledException;
+import com.hippo.streampipe.InputStreamPipe;
 import com.hippo.util.DrawableManager;
+import com.hippo.yorozuya.IOUtils;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -230,6 +241,43 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         mUrl = url;
         mContainer = container;
         mUseNetwork = useNetwork;
+
+        if (!mUseNetwork) {
+            Log.i(TAG, "Detect mUseNetwork = false, load thumbnail using local disk path: " + mUrl);
+
+            InputStreamPipe inputStreamPipe = mContainer == null ? null : mContainer.get();
+            InputStream inputStream = null;
+
+            try {
+                if (inputStreamPipe != null) {
+                    Log.i(TAG, "Detect cache exists, read file in cache");
+                    inputStream = inputStreamPipe.open();
+                    ImageBitmap image = ImageBitmap.decode(inputStream);
+                    onGetValue(image, Conaco.SOURCE_DISK);
+                }
+                else {
+                    Log.i(TAG, "Detect cache does not exists, read file: " + mUrl);
+                    var file = new File(mUrl);
+                    inputStream = new FileInputStream(file);
+                    ImageBitmap image = ImageBitmap.decode(inputStream);
+                    onGetValue(image, Conaco.SOURCE_DISK);
+                    if (mContainer != null)
+                    {
+                        mContainer.save(inputStream, 0L, null, null);
+                    }
+                }
+
+            } catch (FileNotFoundException e) {
+                Log.e(TAG, "File not found: " + mUrl);
+            }  catch (IOException e) {
+                Log.e(TAG, "IOException: " + mUrl);
+            }
+            finally {
+                IOUtils.closeQuietly(inputStream);
+            }
+
+            return;
+        }
 
         ConacoTask.Builder<ImageBitmap> builder = new ConacoTask.Builder<ImageBitmap>()
                 .setUnikery(this)

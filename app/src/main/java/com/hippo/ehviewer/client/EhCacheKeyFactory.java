@@ -37,4 +37,8 @@ public class EhCacheKeyFactory {
     public static String getImageKey(long gid, int index) {
         return "image:" + gid + ":" + index;
     }
+
+    public static String getExternalThumbKey(long gid, String uri) {
+        return "preview:large:" + gid + ":" + 0 + ":" + uri + 0; // "thumb:" + gid;
+    }
 }

@@ -4,7 +4,6 @@ import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
 
@@ -13,9 +12,7 @@ public class ExternalDownloadInfo extends DownloadInfo
     public String language;
     public String size;
     public GalleryTagGroup[] tags;
-    public GalleryDetail galleryDetail;
-    public String localPath;
-    public String absolutePath;
+    public String filePath;
 
     public static ExternalDownloadInfo externalDownloadInfoFromJson(JSONObject object) throws ClassCastException {
         ExternalDownloadInfo info = new ExternalDownloadInfo ();
@@ -31,9 +28,11 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.total = object.getIntValue("total");
         info.language = object.getString("language");
         info.size = object.getString("size");
-        info.localPath = object.getString("localPath");
-        info.absolutePath = getDefaultExternalDownloadDir() + "/" + info.localPath;
-        info.galleryDetail = new GalleryDetail();
+
+        var localPath = object.getString("localPath");
+        info.filePath = getDefaultExternalDownloadDir() + "/" + localPath;
+
+        info.thumb = info.thumb.startsWith("http") ? info.thumb : getDefaultExternalDownloadDir() + "/" + info.thumb;
 
         JSONArray groupedTags = object.getJSONArray("groupedTags");
         if (groupedTags != null) {

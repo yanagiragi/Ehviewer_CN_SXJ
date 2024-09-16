@@ -16,12 +16,10 @@
 
 package com.hippo.ehviewer.ui.scene.gallery.detail;
 
-import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
 import static com.hippo.ehviewer.client.EhClient.TAG;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -31,26 +29,16 @@ import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,7 +47,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.widget.PopupMenu;
-import androidx.core.content.res.ResourcesCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
@@ -76,9 +63,7 @@ import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.Settings;
 import com.hippo.ehviewer.UrlOpener;
 import com.hippo.ehviewer.client.EhCacheKeyFactory;
-import com.hippo.ehviewer.client.EhClient;
 import com.hippo.ehviewer.client.EhFilter;
-import com.hippo.ehviewer.client.EhRequest;
 import com.hippo.ehviewer.client.EhTagDatabase;
 import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.EhUtils;
@@ -89,58 +74,40 @@ import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
 import com.hippo.ehviewer.client.data.ListUrlBuilder;
 import com.hippo.ehviewer.client.data.PreviewSet;
-import com.hippo.ehviewer.client.data.TorrentDownloadMessage;
-import com.hippo.ehviewer.client.exception.NoHAtHClientException;
-import com.hippo.ehviewer.client.parser.RateGalleryParser;
-import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.dao.ExternalDownloadInfo;
 import com.hippo.ehviewer.dao.Filter;
-import com.hippo.ehviewer.ui.CommonOperations;
 import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
-import com.hippo.ehviewer.ui.annotation.WholeLifeCircle;
-import com.hippo.ehviewer.ui.dialog.ArchiverDownloadDialog;
 import com.hippo.ehviewer.ui.scene.BaseScene;
 import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
-import com.hippo.ehviewer.ui.scene.EhCallback;
 import com.hippo.ehviewer.ui.scene.FavoritesScene;
 import com.hippo.ehviewer.ui.scene.GalleryCommentsScene;
 import com.hippo.ehviewer.ui.scene.GalleryInfoScene;
 import com.hippo.ehviewer.ui.scene.GalleryPreviewsScene;
-import com.hippo.ehviewer.ui.scene.gallery.list.EnterGalleryDetailTransaction;
+import com.hippo.ehviewer.ui.scene.download.ExternalDownloadsScene;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
 import com.hippo.ehviewer.util.AppCenterAnalytics;
 import com.hippo.ehviewer.util.ClipboardUtil;
-import com.hippo.ehviewer.widget.GalleryRatingBar;
 import com.hippo.reveal.ViewAnimationUtils;
 import com.hippo.ripple.Ripple;
 import com.hippo.scene.Announcer;
-import com.hippo.scene.SceneFragment;
 import com.hippo.scene.TransitionHelper;
 import com.hippo.text.Html;
 import com.hippo.text.URLImageGetter;
-import com.hippo.util.AppHelper;
-import com.hippo.ehviewer.download.DownloadTorrentManager;
 import com.hippo.util.DrawableManager;
-import com.hippo.util.ExceptionUtils;
-import com.hippo.util.FileUtils;
 import com.hippo.util.ReadableTime;
 import com.hippo.view.ViewTransition;
 import com.hippo.widget.AutoWrapLayout;
 import com.hippo.widget.LoadImageView;
 import com.hippo.widget.ObservedTextView;
-import com.hippo.widget.ProgressView;
 import com.hippo.widget.SimpleGridAutoSpanLayout;
 import com.hippo.yorozuya.AssertUtils;
 import com.hippo.yorozuya.IOUtils;
 import com.hippo.yorozuya.IntIdGenerator;
 import com.hippo.yorozuya.SimpleHandler;
 import com.hippo.yorozuya.ViewUtils;
-import com.google.firebase.crashlytics.FirebaseCrashlytics;
-
-import com.hippo.ehviewer.spider.SpiderQueen;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -152,12 +119,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-
-import okhttp3.OkHttpClient;
 
 public class ExternalGalleryDetailScene extends BaseScene implements View.OnClickListener, View.OnLongClickListener
 {
@@ -306,14 +268,10 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     @Nullable
     private PopupMenu mPopupMenu;
 
-    @WholeLifeCircle
-    private int mDownloadState;
-
     @Nullable
     private String mAction;
     @Nullable
     private ExternalDownloadInfo mGalleryInfo;
-    private DownloadInfo mDownloadInfo;
     private long mGid;
     private String mToken;
 
@@ -321,38 +279,14 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     private GalleryDetail mGalleryDetail;
     private int mRequestId = IntIdGenerator.INVALID_ID;
 
-    private Pair<String, String>[] mTorrentList;
-
-    private String mArchiveFormParamOr;
-    private Pair<String, String>[] mArchiveList;
-
     @Nullable
     private Map<String, String> properties;
 
     @State
     private int mState = STATE_INIT;
 
-    private boolean mModifingFavorites;
-
-    @Nullable
-    private AlertDialog downLoadAlertDialog;
-    @Nullable
-    private View torrentDownloadView;
-    @Nullable
-    private TextView downloadProgress;
-
-    private GalleryUpdateDialog myUpdateDialog;
-
-    private boolean useNetWorkLoadThumb = false;
-
-    private boolean comeFromDownload = false;
-
     private Context mContext;
     private MainActivity activity;
-
-    private ExecutorService executorService;
-
-    private final Handler handler = new Handler(Looper.getMainLooper());
 
     // endregion
 
@@ -505,17 +439,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     @Override
     public View onCreateView2(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         Context context = getEHContext();
-        // Get download state
-        long gid = getGid();
-        if (gid != -1) {
-            AssertUtils.assertNotNull(context);
-            mDownloadState = EhApplication.getDownloadManager(context).getDownloadState(gid);
-        } else {
-            mDownloadState = DownloadInfo.STATE_INVALID;
-        }
-
-        torrentDownloadView = View.inflate(context, R.layout.notification_contentview, null);
-
         View view = inflater.inflate(R.layout.scene_gallery_detail, container, false);
 
         ViewGroup main = (ViewGroup) ViewUtils.$$(view, R.id.main);
@@ -680,7 +603,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         } else if (mRead == v) {
             GalleryInfo galleryInfo = getGalleryInfo();
             if (galleryInfo != null) {
-                var file = new File(mGalleryInfo.absolutePath);
+                var file = new File(mGalleryInfo.filePath);
                 var contentUri = Uri.fromFile(file);
 
                 Intent intent = new Intent(activity, GalleryActivity.class);
@@ -691,7 +614,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             }
         } else if (mInfo == v) {
             Bundle args = new Bundle();
-            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo.galleryDetail);
+            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo);
             startScene(new Announcer(GalleryInfoScene.class).setArgs(args));
         } else if (mSimilar == v) {
             showSimilarGalleryList();
@@ -801,7 +724,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             // Add history
 
         }
-        comeFromDownload = args.getBoolean(KEY_COME_FROM_DOWNLOAD);
     }
 
     @Nullable
@@ -985,7 +907,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         }*/
 
         ExternalDownloadInfo info = mGalleryInfo;
-        mThumb.load(EhCacheKeyFactory.getThumbKey(info.gid), info.thumb);
+        mThumb.load(EhCacheKeyFactory.getExternalThumbKey(info.gid, info.thumb), info.thumb, info.thumb.startsWith("http"));
         mTitle.setText(EhUtils.getSuitableTitle(info));
 
         mLanguage.setText(info.language);
