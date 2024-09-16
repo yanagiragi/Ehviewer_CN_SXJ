@@ -15,6 +15,8 @@ public class ExternalDownloadInfo extends DownloadInfo
     public GalleryTagGroup[] tags;
     public String filePath;
 
+    private static String externalDownloadDir = "";
+
     public GalleryDetail ToGalleryDetail() {
         GalleryDetail galleryDetail = new GalleryDetail();
         galleryDetail.posted = posted;
@@ -56,10 +58,17 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.language = object.getString("language");
         info.size = object.getString("size");
 
-        var localPath = object.getString("localPath");
-        info.filePath = getDefaultExternalDownloadDir() + "/" + localPath;
+        if (externalDownloadDir.isEmpty()) {
+            // cache externalDownloadDir due to its poor performance
+            externalDownloadDir = getDefaultExternalDownloadDir().getPath();
+        }
 
-        info.thumb = info.thumb.startsWith("http") ? info.thumb : getDefaultExternalDownloadDir() + "/" + info.thumb;
+        var localPath = object.getString("localPath");
+        info.filePath = externalDownloadDir + "/" + localPath;
+
+        info.thumb = info.thumb.startsWith("http")
+                ? info.thumb
+                : externalDownloadDir + "/" + info.thumb;
 
         JSONArray groupedTags = object.getJSONArray("groupedTags");
         if (groupedTags != null) {
