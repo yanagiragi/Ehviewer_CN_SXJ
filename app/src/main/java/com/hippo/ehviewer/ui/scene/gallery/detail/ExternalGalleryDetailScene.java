@@ -16,6 +16,8 @@
 
 package com.hippo.ehviewer.ui.scene.gallery.detail;
 
+import static com.hippo.ehviewer.client.EhClient.TAG;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
@@ -156,14 +158,49 @@ import java.util.concurrent.ExecutorService;
 
 import okhttp3.OkHttpClient;
 
-public class ExternalGalleryDetailScene extends BaseScene implements View.OnClickListener,
-        View.OnLongClickListener {
-
+public class ExternalGalleryDetailScene extends BaseScene implements View.OnClickListener, View.OnLongClickListener
+{
+    // region Definitions
     @IntDef({STATE_INIT, STATE_NORMAL, STATE_REFRESH, STATE_REFRESH_HEADER, STATE_FAILED})
     @Retention(RetentionPolicy.SOURCE)
     private @interface State {
     }
 
+    private static class ExitTransaction implements TransitionHelper {
+
+        private final View mThumb;
+
+        public ExitTransaction(View thumb) {
+            mThumb = thumb;
+        }
+
+        @Override
+        public boolean onTransition(Context context,
+                                    FragmentTransaction transaction, Fragment exit, Fragment enter) {
+            if (!(enter instanceof GalleryListScene) && !(enter instanceof DownloadsScene) &&
+                    !(enter instanceof FavoritesScene) && !(enter instanceof HistoryScene)) {
+                return false;
+            }
+
+            String transitionName = ViewCompat.getTransitionName(mThumb);
+            if (transitionName != null) {
+                exit.setSharedElementReturnTransition(
+                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
+                exit.setExitTransition(
+                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
+                enter.setSharedElementEnterTransition(
+                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
+                enter.setEnterTransition(
+                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
+                transaction.addSharedElement(mThumb, transitionName);
+            }
+            return true;
+        }
+    }
+
+    // endregion
+
+    // region Constants
     private static final int REQUEST_CODE_COMMENT_GALLERY = 0;
 
     private static final int STATE_INIT = -1;
@@ -188,6 +225,9 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     private static final String KEY_REQUEST_ID = "request_id";
 
     private static final boolean TRANSITION_ANIMATION_DISABLED = true;
+    // endregion
+
+    // region Variables
 
     /*---------------
      View life cycle
@@ -238,26 +278,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
     // Actions
     @Nullable
     private View mActions;
-    @Nullable
-    private TextView mRatingText;
-    @Nullable
-    private RatingBar mRating;
-    @Nullable
-    private View mHeartGroup;
-    @Nullable
-    private TextView mHeart;
-    @Nullable
-    private TextView mHeartOutline;
-    @Nullable
-    private TextView mTorrent;
-    @Nullable
-    private TextView mHaH;
-    @Nullable
-    private TextView mArchiver;
-    @Nullable
-    private TextView mShare;
-    @Nullable
-    private TextView mRate;
     @Nullable
     private TextView mSimilar;
     @Nullable
@@ -335,124 +355,23 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
-    private void handleArgs(Bundle args) {
-        if (args == null) {
-            return;
-        }
+    // endregion
 
-        String action = args.getString(KEY_ACTION);
-        mAction = action;
-        if (ACTION_GALLERY_INFO.equals(action)) {
-            mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
-            // Add history
-            if (null != mGalleryInfo) {
-                EhDB.putHistoryInfo(mGalleryInfo);
-            }
-        } else if (ACTION_GID_TOKEN.equals(action)) {
-            mGid = args.getLong(KEY_GID);
-            mToken = args.getString(KEY_TOKEN);
-        } else if (ACTION_DOWNLOAD_GALLERY_INFO.equals(action)) {
-            try {
-                mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
-                if (null != mGalleryInfo) {
-                    EhDB.putHistoryInfo(mGalleryInfo);
-                }
-            } catch (ClassCastException e) {
-                mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
-                if (null != mGalleryInfo) {
-                    EhDB.putHistoryInfo(mGalleryInfo);
-                }
-            }
-            // Add history
-
-        }
-        comeFromDownload = args.getBoolean(KEY_COME_FROM_DOWNLOAD);
-    }
-
-    @Nullable
-    private String getGalleryDetailUrl() {
-        long gid;
-        String token;
-        if (mGalleryDetail != null) {
-            gid = mGalleryDetail.gid;
-            token = mGalleryDetail.token;
-        } else if (mGalleryInfo != null) {
-            gid = mGalleryInfo.gid;
-            token = mGalleryInfo.token;
-        } else if (ACTION_GID_TOKEN.equals(mAction)) {
-            gid = mGid;
-            token = mToken;
-        } else {
-            return null;
-        }
-        gid = 3048207;
-        return EhUrl.getGalleryDetailUrl(gid, token, 0, false);
-    }
-
-    // -1 for error
-    private long getGid() {
-        if (mGalleryDetail != null) {
-            return mGalleryDetail.gid;
-        } else if (mGalleryInfo != null) {
-            return mGalleryInfo.gid;
-        } else if (ACTION_GID_TOKEN.equals(mAction)) {
-            return mGid;
-        } else {
-            return -1;
-        }
-    }
-
-    private String getToken() {
-        if (mGalleryDetail != null) {
-            return mGalleryDetail.token;
-        } else if (mGalleryInfo != null) {
-            return mGalleryInfo.token;
-        } else if (ACTION_GID_TOKEN.equals(mAction)) {
-            return mToken;
-        } else {
-            return null;
-        }
-    }
-
-    private String getUploader() {
-        if (mGalleryDetail != null) {
-            return mGalleryDetail.uploader;
-        } else if (mGalleryInfo != null) {
-            return mGalleryInfo.uploader;
-        } else {
-            return null;
-        }
-    }
-
-    // -1 for error
-    private int getCategory() {
-        if (mGalleryDetail != null) {
-            return mGalleryDetail.category;
-        } else if (mGalleryInfo != null) {
-            return mGalleryInfo.category;
-        } else {
-            return -1;
-        }
-    }
-
-    private GalleryInfo getGalleryInfo() {
-        if (null != mGalleryDetail) {
-            return mGalleryDetail;
-        } else if (null != mGalleryInfo) {
-            return mGalleryInfo;
-        } else {
-            return null;
-        }
-    }
+    // region Fragments
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         if (savedInstanceState == null) {
-            onInit();
+            handleArgs(getArguments());
         } else {
-            onRestore(savedInstanceState);
+            mAction = savedInstanceState.getString(KEY_ACTION);
+            mGalleryInfo = savedInstanceState.getParcelable(KEY_GALLERY_INFO);
+            mGid = savedInstanceState.getLong(KEY_GID);
+            mToken = savedInstanceState.getString(KEY_TOKEN);
+            mGalleryDetail = savedInstanceState.getParcelable(KEY_GALLERY_DETAIL);
+            mRequestId = savedInstanceState.getInt(KEY_REQUEST_ID);
         }
 
         if (null == properties && mGalleryInfo != null) {
@@ -463,19 +382,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             properties.put("Time", dateFormat.format(date));
             AppCenterAnalytics.trackEvent("进入画廊详情页", properties);
         }
-    }
-
-    private void onInit() {
-        handleArgs(getArguments());
-    }
-
-    private void onRestore(Bundle savedInstanceState) {
-        mAction = savedInstanceState.getString(KEY_ACTION);
-        mGalleryInfo = savedInstanceState.getParcelable(KEY_GALLERY_INFO);
-        mGid = savedInstanceState.getLong(KEY_GID);
-        mToken = savedInstanceState.getString(KEY_TOKEN);
-        mGalleryDetail = savedInstanceState.getParcelable(KEY_GALLERY_DETAIL);
-        mRequestId = savedInstanceState.getInt(KEY_REQUEST_ID);
     }
 
     @Override
@@ -498,10 +404,108 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         outState.putInt(KEY_REQUEST_ID, mRequestId);
     }
 
+
+    @Override
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+
+        Context context = getEHContext();
+        AssertUtils.assertNotNull(context);
+
+        setDrawerGestureBlocker(null);
+
+        mTip = null;
+        mViewTransition = null;
+
+        mHeader = null;
+        mColorBg = null;
+        mThumb = null;
+        mTitle = null;
+        mUploader = null;
+        mCategory = null;
+        mOtherActions = null;
+        mActionGroup = null;
+        mDownload = null;
+        mHaveNewVersion = null;
+        mRead = null;
+        mBelowHeader = null;
+
+        mInfo = null;
+        mLanguage = null;
+        mPages = null;
+        mSize = null;
+        mPosted = null;
+        mFavoredTimes = null;
+
+        mActions = null;
+        mSimilar = null;
+        mSearchCover = null;
+
+        mTags = null;
+        mNoTags = null;
+
+        mComments = null;
+        mCommentsText = null;
+
+        mPreviews = null;
+        mGridLayout = null;
+        mPreviewText = null;
+
+        mProgress = null;
+
+        mViewTransition2 = null;
+
+        mPopupMenu = null;
+
+        properties = null;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (mViewTransition != null && mThumb != null &&
+                mViewTransition.getShownViewIndex() == 0 && mThumb.isShown()) {
+            int[] location = new int[2];
+            mThumb.getLocationInWindow(location);
+            // Only show transaction when thumb can be seen
+            if (location[1] + mThumb.getHeight() > 0) {
+                setTransitionName();
+                finish(new ExitTransaction(mThumb));
+                return;
+            }
+        }
+        finish();
+    }
+
+    @Override
+    protected void onSceneResult(int requestCode, int resultCode, Bundle data) {
+        if (requestCode == REQUEST_CODE_COMMENT_GALLERY) {
+            if (resultCode != RESULT_OK || data == null) {
+                return;
+            }
+            GalleryCommentList comments = data.getParcelable(GalleryCommentsScene.KEY_COMMENT_LIST);
+            if (mGalleryDetail == null || comments == null) {
+                return;
+            }
+            mGalleryDetail.comments = comments;
+            bindComments(comments.comments);
+        } else {
+            super.onSceneResult(requestCode, resultCode, data);
+        }
+    }
+
+
+    // endregion
+
+    // region BaseScene
+
     @Nullable
     @Override
-    public View onCreateView2(LayoutInflater inflater, @Nullable ViewGroup container,
-                              @Nullable Bundle savedInstanceState) {
+    public View onCreateView2(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         Context context = getEHContext();
         // Get download state
         long gid = getGid();
@@ -599,33 +603,10 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mInfo.setOnClickListener(this);
 
         mActions = ViewUtils.$$(belowHeader, R.id.actions);
-        mRatingText = (TextView) ViewUtils.$$(mActions, R.id.rating_text);
-        mRating = (RatingBar) ViewUtils.$$(mActions, R.id.rating);
-        mHeartGroup = ViewUtils.$$(mActions, R.id.heart_group);
-        mHeart = (TextView) ViewUtils.$$(mHeartGroup, R.id.heart);
-        mHeartOutline = (TextView) ViewUtils.$$(mHeartGroup, R.id.heart_outline);
-        mTorrent = (TextView) ViewUtils.$$(mActions, R.id.torrent);
-        mHaH = (TextView) ViewUtils.$$(mActions, R.id.h_h);
-        mArchiver = (TextView) ViewUtils.$$(mActions, R.id.archiver);
-        mShare = (TextView) ViewUtils.$$(mActions, R.id.share);
-        mRate = (TextView) ViewUtils.$$(mActions, R.id.rate);
         mSimilar = (TextView) ViewUtils.$$(mActions, R.id.similar);
         mSearchCover = (TextView) ViewUtils.$$(mActions, R.id.search_cover);
-        Ripple.addRipple(mHeartGroup, isDarkTheme);
-        Ripple.addRipple(mTorrent, isDarkTheme);
-        Ripple.addRipple(mHaH, isDarkTheme);
-        Ripple.addRipple(mArchiver, isDarkTheme);
-        Ripple.addRipple(mShare, isDarkTheme);
-        Ripple.addRipple(mRate, isDarkTheme);
         Ripple.addRipple(mSimilar, isDarkTheme);
         Ripple.addRipple(mSearchCover, isDarkTheme);
-        mHeartGroup.setOnClickListener(this);
-        mHeartGroup.setOnLongClickListener(this);
-        mTorrent.setOnClickListener(this);
-        mHaH.setOnClickListener(this);
-        mArchiver.setOnClickListener(this);
-        mShare.setOnClickListener(this);
-        mRate.setOnClickListener(this);
         mSimilar.setOnClickListener(this);
         mSearchCover.setOnClickListener(this);
         ensureActionDrawable(context);
@@ -660,165 +641,237 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         return view;
     }
 
+    // endregion
+
+    // region OnClickListener
+
     @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onClick(View v) {
+        mContext = getEHContext();
+        activity = getActivity2();
+        if (null == mContext || null == activity) {
+            return;
+        }
+
+        if (mTip == v) {
+            adjustViewVisibility(STATE_REFRESH, true);
+            // TODO: implement refresh
+            Log.e(TAG, "mTip clicked!");
+        } else if (mOtherActions == v) {
+            ensurePopMenu();
+            if (mPopupMenu != null) {
+                mPopupMenu.show();
+            }
+        } else if (mUploader == v) {
+            String uploader = getUploader();
+            if (TextUtils.isEmpty(uploader)) {
+                return;
+            }
+            ListUrlBuilder lub = new ListUrlBuilder();
+            lub.setMode(ListUrlBuilder.MODE_UPLOADER);
+            lub.setKeyword(uploader);
+            GalleryListScene.startScene(this, lub);
+        } else if (mCategory == v) {
+            int category = getCategory();
+            if (category == -1) {
+                return;
+            }
+            ListUrlBuilder lub = new ListUrlBuilder();
+            lub.setCategory(category);
+            GalleryListScene.startScene(this, lub);
+        } else if (mDownload == v) {
+            Toast.makeText(mContext, R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
+        } else if (mHaveNewVersion == v) {
+            if (mGalleryDetail == null) {
+                return;
+            }
+            // myUpdateDialog.showSelectDialog(mGalleryDetail);
+        } else if (mRead == v) {
+            GalleryInfo galleryInfo = getGalleryInfo();
+            if (galleryInfo != null) {
+
+                Intent intent = new Intent(activity, GalleryActivity.class);
+                intent.setAction(Intent.ACTION_VIEW);
+                var file = new File(Environment.getExternalStorageDirectory() + "/Download/1.zip");
+                var contentUri = Uri.fromFile(file);
+                System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
+                intent.setData(contentUri);
+
+                startActivity(intent);
+            }
+        } else if (mInfo == v) {
+            Bundle args = new Bundle();
+            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo.galleryDetail);
+            startScene(new Announcer(GalleryInfoScene.class).setArgs(args));
+        } else if (mSimilar == v) {
+            showSimilarGalleryList();
+        } else if (mSearchCover == v) {
+            showCoverGalleryList();
+        } else if (mComments == v) {
+            if (mGalleryDetail == null) {
+                return;
+            }
+            Bundle args = new Bundle();
+            args.putLong(GalleryCommentsScene.KEY_API_UID, mGalleryDetail.apiUid);
+            args.putString(GalleryCommentsScene.KEY_API_KEY, mGalleryDetail.apiKey);
+            args.putLong(GalleryCommentsScene.KEY_GID, mGalleryDetail.gid);
+            args.putString(GalleryCommentsScene.KEY_TOKEN, mGalleryDetail.token);
+            args.putParcelable(GalleryCommentsScene.KEY_COMMENT_LIST, mGalleryDetail.comments);
+            startScene(new Announcer(GalleryCommentsScene.class)
+                    .setArgs(args)
+                    .setRequestCode(this, REQUEST_CODE_COMMENT_GALLERY));
+        } else if (mPreviews == v) {
+            if (null != mGalleryDetail) {
+                Bundle args = new Bundle();
+                args.putParcelable(GalleryPreviewsScene.KEY_GALLERY_INFO, mGalleryDetail);
+                startScene(new Announcer(GalleryPreviewsScene.class).setArgs(args));
+            }
+        } else if (mTitle == v) {
+            if (mGalleryDetail != null && mGalleryDetail.title != null) {
+                ClipboardUtil.copyText(mGalleryDetail.title);
+                Toast.makeText(getContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Object o = v.getTag(R.id.tag);
+            if (o instanceof String) {
+                String tag = (String) o;
+                ListUrlBuilder lub = new ListUrlBuilder();
+                lub.setMode(ListUrlBuilder.MODE_TAG);
+                lub.setKeyword(tag);
+                GalleryListScene.startScene(this, lub);
+                return;
+            }
+
+            GalleryInfo galleryInfo = getGalleryInfo();
+            o = v.getTag(R.id.index);
+            if (null != galleryInfo && o instanceof Integer) {
+                int index = (Integer) o;
+                Intent intent = new Intent(mContext, GalleryActivity.class);
+                intent.setAction(GalleryActivity.ACTION_EH);
+                intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, galleryInfo);
+                intent.putExtra(GalleryActivity.KEY_PAGE, index);
+                startActivity(intent);
+            }
+        }
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
+    public boolean onLongClick(View v) {
+        mContext = getEHContext();
+        activity = getActivity2();
+        if (null == activity) {
+            return false;
+        }
 
-        Context context = getEHContext();
-        AssertUtils.assertNotNull(context);
+        if (mUploader == v) {
+            showFilterUploaderDialog();
+        } else {
+            String tag = (String) v.getTag(R.id.tag);
+            if (null != tag) {
+                showTagDialog(tag);
+                return true;
+            }
+        }
 
-        setDrawerGestureBlocker(null);
-
-        mTip = null;
-        mViewTransition = null;
-
-        mHeader = null;
-        mColorBg = null;
-        mThumb = null;
-        mTitle = null;
-        mUploader = null;
-        mCategory = null;
-        mOtherActions = null;
-        mActionGroup = null;
-        mDownload = null;
-        mHaveNewVersion = null;
-        mRead = null;
-        mBelowHeader = null;
-
-        mInfo = null;
-        mLanguage = null;
-        mPages = null;
-        mSize = null;
-        mPosted = null;
-        mFavoredTimes = null;
-
-        mActions = null;
-        mRatingText = null;
-        mRating = null;
-        mHeartGroup = null;
-        mHeart = null;
-        mHeartOutline = null;
-        mTorrent = null;
-        mHaH = null;
-        mArchiver = null;
-        mShare = null;
-        mRate = null;
-        mSimilar = null;
-        mSearchCover = null;
-
-        mTags = null;
-        mNoTags = null;
-
-        mComments = null;
-        mCommentsText = null;
-
-        mPreviews = null;
-        mGridLayout = null;
-        mPreviewText = null;
-
-        mProgress = null;
-
-        mViewTransition2 = null;
-
-        mPopupMenu = null;
-
-        properties = null;
+        return false;
     }
 
-    private boolean prepareData() {
-        Context context = getEHContext();
-        AssertUtils.assertNotNull(context);
+    // endregion
 
+    // region Private Methods
+
+    private void handleArgs(Bundle args) {
+        if (args == null) {
+            return;
+        }
+
+        String action = args.getString(KEY_ACTION);
+        mAction = action;
+        if (ACTION_GALLERY_INFO.equals(action)) {
+            mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
+            // Add history
+            if (null != mGalleryInfo) {
+                EhDB.putHistoryInfo(mGalleryInfo);
+            }
+        } else if (ACTION_GID_TOKEN.equals(action)) {
+            mGid = args.getLong(KEY_GID);
+            mToken = args.getString(KEY_TOKEN);
+        } else if (ACTION_DOWNLOAD_GALLERY_INFO.equals(action)) {
+            try {
+                mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
+                if (null != mGalleryInfo) {
+                    EhDB.putHistoryInfo(mGalleryInfo);
+                }
+            } catch (ClassCastException e) {
+                mGalleryInfo = args.getParcelable(KEY_GALLERY_INFO);
+                if (null != mGalleryInfo) {
+                    EhDB.putHistoryInfo(mGalleryInfo);
+                }
+            }
+            // Add history
+
+        }
+        comeFromDownload = args.getBoolean(KEY_COME_FROM_DOWNLOAD);
+    }
+
+    @Nullable
+    private String getGalleryDetailUrl() {
+        long gid;
+        String token;
         if (mGalleryDetail != null) {
-            return true;
+            gid = mGalleryDetail.gid;
+            token = mGalleryDetail.token;
+        } else if (mGalleryInfo != null) {
+            gid = mGalleryInfo.gid;
+            token = mGalleryInfo.token;
+        } else if (ACTION_GID_TOKEN.equals(mAction)) {
+            gid = mGid;
+            token = mToken;
+        } else {
+            return null;
         }
-
-        long gid = getGid();
-        if (gid == -1) {
-            return false;
-        }
-
-        // Get from cache
-        // mGalleryDetail = EhApplication.getGalleryDetailCache(context).get(gid);
-        // if (mGalleryDetail != null) {
-        //     return true;
-        // }
-
-        EhApplication application = (EhApplication) context.getApplicationContext();
-        if (application.containGlobalStuff(mRequestId)) {
-            // request exist
-            return true;
-        }
-
-        // Do request
-        return request();
+        return EhUrl.getGalleryDetailUrl(gid, token, 0, false);
     }
 
-    private boolean request(String url, int resultMode) {
-        Context context = getEHContext();
-        MainActivity activity = getActivity2();
-
-        if (null == context || null == activity || null == url) {
-            return false;
+    // -1 for error
+    private long getGid() {
+        GalleryInfo info = getGalleryInfo();
+        if (info == null && ACTION_GID_TOKEN.equals(mAction)){
+            return mGid;
         }
-
-        EhClient.Callback<GalleryDetail> callback = new GetGalleryDetailListener(context,
-                activity.getStageId(), getTag(), resultMode);
-        mRequestId = ((EhApplication) context.getApplicationContext()).putGlobalStuff(callback);
-        EhRequest request = new EhRequest()
-                .setMethod(EhClient.METHOD_GET_GALLERY_DETAIL)
-                .setArgs(url)
-                .setCallback(callback);
-        EhApplication.getEhClient(context).execute(request);
-
-        return true;
+        return info == null ? null : info.gid;
     }
 
-    private boolean request() {
-        String url = getGalleryDetailUrl();
-        return request(url, GetGalleryDetailListener.RESULT_DETAIL);
+    private String getToken() {
+        GalleryInfo info = getGalleryInfo();
+        if (info == null && ACTION_GID_TOKEN.equals(mAction)){
+            return mToken;
+        }
+        return info == null ? null : info.token;
     }
 
-    private void setActionDrawable(TextView text, Drawable drawable) {
-        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
-        text.setCompoundDrawables(null, drawable, null, null);
+    private String getUploader() {
+        GalleryInfo info = getGalleryInfo();
+        return info == null ? null : info.uploader;
+    }
+
+    // -1 for error
+    private int getCategory() {
+        GalleryInfo info = getGalleryInfo();
+        return info == null ? -1 : info.category;
+    }
+
+    private GalleryInfo getGalleryInfo() {
+        if (null != mGalleryDetail) {
+            return mGalleryDetail;
+        } else if (null != mGalleryInfo) {
+            return mGalleryInfo;
+        } else {
+            return null;
+        }
     }
 
     private void ensureActionDrawable(Context context) {
-        Drawable heart = DrawableManager.getVectorDrawable(context, R.drawable.v_heart_primary_x48);
-        if (mHeart != null) {
-            setActionDrawable(mHeart, heart);
-        }
-        Drawable heartOutline = DrawableManager.getVectorDrawable(context, R.drawable.v_heart_outline_primary_x48);
-        if (mHeartOutline != null) {
-            setActionDrawable(mHeartOutline, heartOutline);
-        }
-        Drawable torrent = DrawableManager.getVectorDrawable(context, R.drawable.v_utorrent_primary_x48);
-        if (mTorrent != null) {
-            setActionDrawable(mTorrent, torrent);
-        }
-        Drawable archiver = DrawableManager.getVectorDrawable(context, R.drawable.v_archiver_primary_x48);
-        if (mArchiver != null) {
-            setActionDrawable(mArchiver, archiver);
-        }
-        Drawable archiveHH = DrawableManager.getVectorDrawable(context, R.drawable.v_archive_hh_primary_x48);
-        if (mHaH != null) {
-            setActionDrawable(mHaH, archiveHH);
-        }
-
-        Drawable share = DrawableManager.getVectorDrawable(context, R.drawable.v_share_primary_x48);
-        if (mShare != null) {
-            setActionDrawable(mShare, share);
-        }
-        Drawable rate = DrawableManager.getVectorDrawable(context, R.drawable.v_thumb_up_primary_x48);
-        if (mRate != null) {
-            setActionDrawable(mRate, rate);
-        }
         Drawable similar = DrawableManager.getVectorDrawable(context, R.drawable.v_similar_primary_x48);
         if (mSimilar != null) {
             setActionDrawable(mSimilar, similar);
@@ -827,6 +880,11 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         if (mSearchCover != null) {
             setActionDrawable(mSearchCover, searchCover);
         }
+    }
+
+    private void setActionDrawable(TextView text, Drawable drawable) {
+        drawable.setBounds(0, 0, drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight());
+        text.setCompoundDrawables(null, drawable, null, null);
     }
 
     private boolean createCircularReveal() {
@@ -909,51 +967,11 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         }
     }
 
-    private void bindViewFirst() {
-        if (mGalleryDetail != null) {
-            return;
-        }
-        if (mThumb == null || mTitle == null || mUploader == null || mCategory == null) {
-            return;
-        }
-
-        if ((ACTION_GALLERY_INFO.equals(mAction) || ACTION_DOWNLOAD_GALLERY_INFO.equals(mAction)) && mGalleryInfo != null) {
-            GalleryInfo gi = mGalleryInfo;
-            mThumb.load(EhCacheKeyFactory.getThumbKey(gi.gid), gi.thumb);
-            mTitle.setText(EhUtils.getSuitableTitle(gi));
-            mUploader.setVisibility(View.GONE);
-            mCategory.setVisibility(View.GONE);
-            mDownload.setText(R.string.download_state_downloaded);
-        }
-    }
-
-    private void updateFavoriteDrawable() {
-        GalleryDetail gd = mGalleryDetail;
-        if (gd == null) {
-            return;
-        }
-        if (mHeart == null || mHeartOutline == null) {
-            return;
-        }
-
-        if (gd.isFavorited || EhDB.containLocalFavorites(gd.gid)) {
-            mHeart.setVisibility(View.VISIBLE);
-            if (gd.favoriteName == null) {
-                mHeart.setText(R.string.local_favorites);
-            } else {
-                mHeart.setText(gd.favoriteName);
-            }
-            mHeartOutline.setVisibility(View.GONE);
-        } else {
-            mHeart.setVisibility(View.GONE);
-            mHeartOutline.setVisibility(View.VISIBLE);
-        }
-    }
 
     private void bindViewSecond() {
         if (mThumb == null || mTitle == null || mUploader == null || mCategory == null ||
                 mLanguage == null || mPages == null || mSize == null || mPosted == null ||
-                mFavoredTimes == null || mRatingText == null || mRating == null || mTorrent == null) {
+                mFavoredTimes == null) {
             return;
         }
         /*Resources resources = getResources2();
@@ -984,7 +1002,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mPages.setText("0/" + info.pages + "P");
         mSize.setText(info.size);
         mPosted.setText(info.posted);
-        mRating.setRating(info.rating);
         bindTags(info.tags);
 
         mDownload.setText(R.string.download_state_downloaded);
@@ -996,40 +1013,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mCategory.setVisibility(View.GONE);
         mActions.setVisibility(View.GONE);
         mFavoredTimes.setVisibility(View.GONE);
-        mTorrent.setVisibility(View.GONE);
-        mHeart.setVisibility(View.GONE);
-        mHeartOutline.setVisibility(View.GONE);
-        mRatingText.setVisibility(View.GONE);
-
-    }
-
-    private void bindReadProgress(GalleryInfo info) {
-        if (mContext == null) {
-            mContext = getEHContext();
-            if (mContext == null) {
-                return;
-            }
-        }
-        if (executorService == null) {
-            executorService = EhApplication.getExecutorService(mContext);
-        }
-
-        executorService.submit(() -> {
-            int startPage = SpiderQueen.findStartPage(this.mContext, info);
-            int pages = info.pages;
-            String text;
-            if (startPage > 0) {
-                text = startPage + 1 + "/" + pages + "P";
-            } else {
-                text = "0/" + pages + "P";
-            }
-            handler.post(() -> {
-                if (mPages == null) {
-                    return;
-                }
-                mPages.setText(text);
-            });
-        });
     }
 
     @SuppressWarnings("deprecation")
@@ -1208,13 +1191,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         return resources.getString(resId);
     }
 
-    private String getAllRatingText(float rating, int ratingCount) {
-        Resources resources = getResources2();
-        assert resources != null;
-        AssertUtils.assertNotNull(resources);
-        return resources.getString(R.string.rating_text, getRatingText(rating, resources), rating, ratingCount);
-    }
-
     private void setTransitionName() {
         long gid = getGid();
 
@@ -1248,10 +1224,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
                     }
                     break;
                 case R.id.action_refresh:
-                    if (mState != STATE_REFRESH && mState != STATE_REFRESH_HEADER) {
-                        adjustViewVisibility(STATE_REFRESH, true);
-                        request();
-                    }
+                    Toast.makeText(getEHContext(), R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
                     break;
             }
             return true;
@@ -1334,184 +1307,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         }
     }
 
-    @Override
-    public void onClick(View v) {
-        mContext = getEHContext();
-        activity = getActivity2();
-        if (null == mContext || null == activity) {
-            return;
-        }
-
-        if (mTip == v) {
-            if (request()) {
-                adjustViewVisibility(STATE_REFRESH, true);
-            }
-        } else if (mOtherActions == v) {
-            ensurePopMenu();
-            if (mPopupMenu != null) {
-                mPopupMenu.show();
-            }
-        } else if (mUploader == v) {
-            String uploader = getUploader();
-            if (TextUtils.isEmpty(uploader)) {
-                return;
-            }
-            ListUrlBuilder lub = new ListUrlBuilder();
-            lub.setMode(ListUrlBuilder.MODE_UPLOADER);
-            lub.setKeyword(uploader);
-            GalleryListScene.startScene(this, lub);
-        } else if (mCategory == v) {
-            int category = getCategory();
-            if (category == -1) {
-                return;
-            }
-            ListUrlBuilder lub = new ListUrlBuilder();
-            lub.setCategory(category);
-            GalleryListScene.startScene(this, lub);
-        } else if (mDownload == v) {
-            Toast.makeText(mContext, R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
-        } else if (mHaveNewVersion == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            // myUpdateDialog.showSelectDialog(mGalleryDetail);
-        } else if (mRead == v) {
-            GalleryInfo galleryInfo = getGalleryInfo();
-            if (galleryInfo != null) {
-
-                Intent intent = new Intent(activity, GalleryActivity.class);
-                intent.setAction(Intent.ACTION_VIEW);
-                var file = new File(Environment.getExternalStorageDirectory() + "/Download/1.zip");
-                var contentUri = Uri.fromFile(file);
-                System.out.println("<Flag> path = " + contentUri + ", file.exists() = " + file.exists());
-                intent.setData(contentUri);
-
-                startActivity(intent);
-            }
-        } else if (mInfo == v) {
-            Bundle args = new Bundle();
-            args.putParcelable(GalleryInfoScene.KEY_GALLERY_DETAIL, mGalleryInfo.galleryDetail);
-            startScene(new Announcer(GalleryInfoScene.class).setArgs(args));
-        } else if (mHeartGroup == v) {
-            if (mGalleryDetail != null && !mModifingFavorites) {
-                boolean remove = false;
-                if (EhDB.containLocalFavorites(mGalleryDetail.gid) || mGalleryDetail.isFavorited) {
-                    mModifingFavorites = true;
-                    // CommonOperations.removeFromFavorites(activity, mGalleryDetail,
-                    //         new ModifyFavoritesListener(mContext,
-                    //                 activity.getStageId(), getTag(), true));
-                    remove = true;
-                }
-                if (!remove) {
-                    mModifingFavorites = true;
-                    // CommonOperations.addToFavorites(activity, mGalleryDetail,
-                    //         new ModifyFavoritesListener(mContext,
-                    //                 activity.getStageId(), getTag(), false), false);
-                }
-                // Update UI
-                updateFavoriteDrawable();
-            }
-        } else if (mShare == v) {
-            String url = getGalleryDetailUrl();
-            if (url != null) {
-                AppHelper.share(activity, url);
-            }
-        } else if (mTorrent == v) {
-            // do nothing
-        } else if (mHaH == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            if (mGalleryDetail.apiUid < 0) {
-                showTip(R.string.sign_in_first, LENGTH_LONG);
-                return;
-            }
-            ArchiveListDialogHelper helper = new ArchiveListDialogHelper();
-            Dialog dialog = new AlertDialog.Builder(mContext)
-                    .setTitle(R.string.dialog_archive_title)
-                    .setView(R.layout.dialog_archive_list)
-                    .setOnDismissListener(helper)
-                    .show();
-            helper.setDialog(dialog, mGalleryDetail.archiveUrl);
-        } else if (mArchiver == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            if (mGalleryDetail.apiUid < 0) {
-                showTip(R.string.sign_in_first, LENGTH_LONG);
-                return;
-            }
-
-            // ArchiverDownloadDialog archiverDownloadDialog = new ArchiverDownloadDialog(mGalleryDetail, this);
-            // archiverDownloadDialog.showDialog();
-
-        } else if (mRate == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            if (mGalleryDetail.apiUid < 0) {
-                showTip(R.string.sign_in_first, LENGTH_LONG);
-                return;
-            }
-            // RateDialogHelper helper = new RateDialogHelper();
-            Dialog dialog = new AlertDialog.Builder(mContext)
-                    .setTitle(R.string.rate)
-                    .setView(R.layout.dialog_rate)
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show();
-            //helper.setDialog(dialog, mGalleryDetail.rating);
-        } else if (mSimilar == v) {
-            showSimilarGalleryList();
-        } else if (mSearchCover == v) {
-            showCoverGalleryList();
-        } else if (mComments == v) {
-            if (mGalleryDetail == null) {
-                return;
-            }
-            Bundle args = new Bundle();
-            args.putLong(GalleryCommentsScene.KEY_API_UID, mGalleryDetail.apiUid);
-            args.putString(GalleryCommentsScene.KEY_API_KEY, mGalleryDetail.apiKey);
-            args.putLong(GalleryCommentsScene.KEY_GID, mGalleryDetail.gid);
-            args.putString(GalleryCommentsScene.KEY_TOKEN, mGalleryDetail.token);
-            args.putParcelable(GalleryCommentsScene.KEY_COMMENT_LIST, mGalleryDetail.comments);
-            startScene(new Announcer(GalleryCommentsScene.class)
-                    .setArgs(args)
-                    .setRequestCode(this, REQUEST_CODE_COMMENT_GALLERY));
-        } else if (mPreviews == v) {
-            if (null != mGalleryDetail) {
-                Bundle args = new Bundle();
-                args.putParcelable(GalleryPreviewsScene.KEY_GALLERY_INFO, mGalleryDetail);
-                startScene(new Announcer(GalleryPreviewsScene.class).setArgs(args));
-            }
-        } else if (mTitle == v) {
-            if (mGalleryDetail != null && mGalleryDetail.title != null) {
-                ClipboardUtil.copyText(mGalleryDetail.title);
-                Toast.makeText(getContext(), R.string.copied_to_clipboard, Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Object o = v.getTag(R.id.tag);
-            if (o instanceof String) {
-                String tag = (String) o;
-                ListUrlBuilder lub = new ListUrlBuilder();
-                lub.setMode(ListUrlBuilder.MODE_TAG);
-                lub.setKeyword(tag);
-                GalleryListScene.startScene(this, lub);
-                return;
-            }
-
-            GalleryInfo galleryInfo = getGalleryInfo();
-            o = v.getTag(R.id.index);
-            if (null != galleryInfo && o instanceof Integer) {
-                int index = (Integer) o;
-                Intent intent = new Intent(mContext, GalleryActivity.class);
-                intent.setAction(GalleryActivity.ACTION_EH);
-                intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, galleryInfo);
-                intent.putExtra(GalleryActivity.KEY_PAGE, index);
-                startActivity(intent);
-            }
-        }
-    }
 
     private void showFilterUploaderDialog() {
         Context context = getEHContext();
@@ -1595,396 +1390,5 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         Toast.makeText(context, R.string.gallery_tag_copy, Toast.LENGTH_LONG).show();
     }
 
-
-    @Override
-    public boolean onLongClick(View v) {
-        mContext = getEHContext();
-        activity = getActivity2();
-        if (null == activity) {
-            return false;
-        }
-
-        if (mUploader == v) {
-            showFilterUploaderDialog();
-        } else if (mDownload == v) {
-//            GalleryInfo galleryInfo = getGalleryInfo();
-//            if (galleryInfo != null) {
-//                CommonOperations.startDownload(activity, galleryInfo, true);
-//            }
-            onDownload();
-            return true;
-        } else if (v == mHeartGroup) {
-            if (mGalleryDetail != null && !mModifingFavorites) {
-                if (!(EhDB.containLocalFavorites(mGalleryDetail.gid) || mGalleryDetail.isFavorited)) {
-                    mModifingFavorites = true;
-                    // CommonOperations.addToFavorites(activity, mGalleryDetail,
-                    //         new ModifyFavoritesListener(mContext,
-                    //                 activity.getStageId(), getTag(), false), true);
-                }
-                // Update UI
-                updateFavoriteDrawable();
-            }
-        } else {
-            String tag = (String) v.getTag(R.id.tag);
-            if (null != tag) {
-                showTagDialog(tag);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void onDownload() {
-        GalleryInfo galleryInfo = getGalleryInfo();
-        if (galleryInfo != null) {
-            if (EhApplication.getDownloadManager(mContext).getDownloadState(galleryInfo.gid) == DownloadInfo.STATE_INVALID) {
-                CommonOperations.startDownload(activity, galleryInfo, false);
-            } else {
-                new AlertDialog.Builder(mContext)
-                        .setTitle(R.string.download_remove_dialog_title)
-                        .setMessage(getString(R.string.download_remove_dialog_message, galleryInfo.title))
-                        .setPositiveButton(android.R.string.ok, (dialog1, which1) -> EhApplication.getDownloadManager(mContext).deleteDownload(galleryInfo.gid))
-                        .show();
-            }
-        }
-    }
-
-    public void startUpdateDownload(String updateUrl) {
-        if (mGalleryDetail == null || mGalleryDetail.newVersions == null) {
-            return;
-        }
-        adjustViewVisibility(STATE_REFRESH, false);
-        request(updateUrl, GetGalleryDetailListener.RESULT_UPDATE);
-    }
-
-    public void startDownloadAsNew(String updateUrl) {
-        if (mGalleryDetail == null || mGalleryDetail.newVersions == null) {
-            return;
-        }
-        adjustViewVisibility(STATE_REFRESH, false);
-        request(updateUrl, GetGalleryDetailListener.RESULT_DETAIL);
-    }
-
-    public void gotoNewVersion(GalleryDetail detail) {
-        Bundle args = new Bundle();
-        args.putString(GalleryDetailScene.KEY_ACTION, GalleryDetailScene.ACTION_DOWNLOAD_GALLERY_INFO);
-        args.putParcelable(KEY_GALLERY_INFO, detail);
-        args.putBoolean(KEY_COME_FROM_DOWNLOAD, true);
-        Announcer announcer = new Announcer(GalleryDetailScene.class).setArgs(args);
-        announcer.setTranHelper(new EnterGalleryDetailTransaction(mThumb));
-        startScene(announcer);
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (mViewTransition != null && mThumb != null &&
-                mViewTransition.getShownViewIndex() == 0 && mThumb.isShown()) {
-            int[] location = new int[2];
-            mThumb.getLocationInWindow(location);
-            // Only show transaction when thumb can be seen
-            if (location[1] + mThumb.getHeight() > 0) {
-                setTransitionName();
-                finish(new ExitTransaction(mThumb));
-                return;
-            }
-        }
-        finish();
-    }
-
-    @Override
-    protected void onSceneResult(int requestCode, int resultCode, Bundle data) {
-        if (requestCode == REQUEST_CODE_COMMENT_GALLERY) {
-            if (resultCode != RESULT_OK || data == null) {
-                return;
-            }
-            GalleryCommentList comments = data.getParcelable(GalleryCommentsScene.KEY_COMMENT_LIST);
-            if (mGalleryDetail == null || comments == null) {
-                return;
-            }
-            mGalleryDetail.comments = comments;
-            bindComments(comments.comments);
-        } else {
-            super.onSceneResult(requestCode, resultCode, data);
-        }
-    }
-
-    private void updateDownloadText() {
-        if (null == mDownload) {
-            return;
-        }
-        switch (mDownloadState) {
-            default:
-            case DownloadInfo.STATE_INVALID:
-                mDownload.setText(R.string.download);
-                break;
-            case DownloadInfo.STATE_NONE:
-                mDownload.setText(R.string.download_state_none);
-                break;
-            case DownloadInfo.STATE_WAIT:
-                mDownload.setText(R.string.download_state_wait);
-                break;
-            case DownloadInfo.STATE_DOWNLOAD:
-                mDownload.setText(R.string.download_state_downloading);
-                break;
-            case DownloadInfo.STATE_FINISH:
-                mDownload.setText(R.string.download_state_downloaded);
-                break;
-            case DownloadInfo.STATE_FAILED:
-                mDownload.setText(R.string.download_state_failed);
-                break;
-//            case DownloadInfo.STATE_UPDATE:
-//                mDownload.setText(R.string.update);
-//                break;
-//            case DownloadInfo.GOTO_NEW:
-//                mDownload.setText(R.string.new_version);
-//                break;
-        }
-    }
-
-    private void updateDownloadState() {
-        Context context = getEHContext();
-        long gid = getGid();
-        if (null == context || -1L == gid) {
-            return;
-        }
-
-        int downloadState = EhApplication.getDownloadManager(context).getDownloadState(gid);
-        if (downloadState == mDownloadState) {
-            return;
-        }
-        mDownloadState = downloadState;
-        updateDownloadText();
-    }
-
-    private static class ExitTransaction implements TransitionHelper {
-
-        private final View mThumb;
-
-        public ExitTransaction(View thumb) {
-            mThumb = thumb;
-        }
-
-        @Override
-        public boolean onTransition(Context context,
-                                    FragmentTransaction transaction, Fragment exit, Fragment enter) {
-            if (!(enter instanceof GalleryListScene) && !(enter instanceof DownloadsScene) &&
-                    !(enter instanceof FavoritesScene) && !(enter instanceof HistoryScene)) {
-                return false;
-            }
-
-            String transitionName = ViewCompat.getTransitionName(mThumb);
-            if (transitionName != null) {
-                exit.setSharedElementReturnTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
-                exit.setExitTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
-                enter.setSharedElementEnterTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_move));
-                enter.setEnterTransition(
-                        TransitionInflater.from(context).inflateTransition(R.transition.trans_fade));
-                transaction.addSharedElement(mThumb, transitionName);
-            }
-            return true;
-        }
-    }
-
-    //private static class ModifyFavoritesListener extends EhCallback<GalleryDetailScene, Void> {
-//
-    //    private final boolean mAddOrRemove;
-//
-    //    /**
-    //     * @param addOrRemove false for add, true for remove
-    //     */
-    //    public ModifyFavoritesListener(Context context, int stageId, String sceneTag, boolean addOrRemove) {
-    //        super(context, stageId, sceneTag);
-    //        mAddOrRemove = addOrRemove;
-    //    }
-//
-    //    @Override
-    //    public void onSuccess(Void result) {
-    //        showTip(mAddOrRemove ? R.string.remove_from_favorite_success :
-    //                R.string.add_to_favorite_success, LENGTH_SHORT);
-    //        GalleryDetailScene scene = getScene();
-    //        if (scene != null) {
-    //            scene.onModifyFavoritesSuccess(mAddOrRemove);
-    //        }
-    //    }
-//
-    //    @Override
-    //    public void onFailure(Exception e) {
-    //        showTip(mAddOrRemove ? R.string.remove_from_favorite_failure :
-    //                R.string.add_to_favorite_failure, LENGTH_LONG);
-    //        GalleryDetailScene scene = getScene();
-    //        if (scene != null) {
-    //            scene.onModifyFavoritesFailure(mAddOrRemove);
-    //        }
-    //    }
-//
-    //    @Override
-    //    public void onCancel() {
-    //        GalleryDetailScene scene = getScene();
-    //        if (scene != null) {
-    //            scene.onModifyFavoritesCancel(mAddOrRemove);
-    //        }
-    //    }
-//
-    //    @Override
-    //    public boolean isInstance(SceneFragment scene) {
-    //        return scene instanceof GalleryDetailScene;
-    //    }
-    //}
-
-    private static class DownloadArchiveListener extends EhCallback<GalleryDetailScene, Void> {
-
-        public DownloadArchiveListener(Context context, int stageId, String sceneTag) {
-            super(context, stageId, sceneTag);
-        }
-
-        @Override
-        public void onSuccess(Void result) {
-            showTip(R.string.download_archive_started, LENGTH_SHORT);
-        }
-
-        @Override
-        public void onFailure(Exception e) {
-            if (e instanceof NoHAtHClientException) {
-                showTip(R.string.download_h_h_failure_no_hath, LENGTH_LONG);
-            } else {
-                showTip(R.string.download_archive_failure, LENGTH_LONG);
-            }
-        }
-
-        @Override
-        public void onCancel() {
-        }
-
-        @Override
-        public boolean isInstance(SceneFragment scene) {
-            return scene instanceof GalleryDetailScene;
-        }
-    }
-
-    private class ArchiveListDialogHelper implements AdapterView.OnItemClickListener,
-            DialogInterface.OnDismissListener, EhClient.Callback<Pair<String, Pair<String, String>[]>> {
-
-        @Nullable
-        private ProgressView mProgressView;
-        @Nullable
-        private TextView mErrorText;
-        @Nullable
-        private ListView mListView;
-        @Nullable
-        private EhRequest mRequest;
-        @Nullable
-        private Dialog mDialog;
-
-        public void setDialog(@Nullable Dialog dialog, String url) {
-            if (dialog == null) {
-                return;
-            }
-            mDialog = dialog;
-            mProgressView = (ProgressView) ViewUtils.$$(dialog, R.id.progress);
-            mErrorText = (TextView) ViewUtils.$$(dialog, R.id.text);
-            mListView = (ListView) ViewUtils.$$(dialog, R.id.list_view);
-            mListView.setOnItemClickListener(this);
-
-            Context context = getEHContext();
-            if (context != null) {
-                if (mArchiveList == null) {
-                    mErrorText.setVisibility(View.GONE);
-                    mListView.setVisibility(View.GONE);
-                    mRequest = new EhRequest().setMethod(EhClient.METHOD_ARCHIVE_LIST)
-                            .setArgs(url, mGid, mToken)
-                            .setCallback(this);
-                    assert mRequest != null;
-                    EhApplication.getEhClient(context).execute(mRequest);
-                } else {
-                    bind(mArchiveList);
-                }
-            }
-        }
-
-        private void bind(Pair<String, String>[] data) {
-            if (null == mDialog || null == mProgressView || null == mErrorText || null == mListView) {
-                return;
-            }
-
-            if (0 == data.length) {
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.VISIBLE);
-                mListView.setVisibility(View.GONE);
-                mErrorText.setText(R.string.no_archives);
-            } else {
-                String[] nameArray = new String[data.length];
-                for (int i = 0, n = data.length; i < n; i++) {
-                    nameArray[i] = data[i].second;
-                }
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.GONE);
-                mListView.setVisibility(View.VISIBLE);
-                mListView.setAdapter(new ArrayAdapter<>(mDialog.getContext(), R.layout.item_select_dialog, nameArray));
-            }
-        }
-
-        @Override
-        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            Context context = getEHContext();
-            MainActivity activity = getActivity2();
-            if (null != context && null != activity && null != mArchiveList && position < mArchiveList.length) {
-                if (mGalleryDetail == null)
-                    return;
-                String res = mArchiveList[position].first;
-                EhRequest request = new EhRequest();
-                request.setMethod(EhClient.METHOD_DOWNLOAD_ARCHIVE);
-                request.setArgs(mGalleryDetail.gid, mGalleryDetail.token, mArchiveFormParamOr, res);
-                request.setCallback(new DownloadArchiveListener(context, activity.getStageId(), getTag()));
-                EhApplication.getEhClient(context).execute(request);
-            }
-
-            if (mDialog != null) {
-                mDialog.dismiss();
-                mDialog = null;
-            }
-        }
-
-        @Override
-        public void onDismiss(DialogInterface dialog) {
-            if (mRequest != null) {
-                mRequest.cancel();
-                mRequest = null;
-            }
-            mDialog = null;
-            mProgressView = null;
-            mErrorText = null;
-            mListView = null;
-        }
-
-        @Override
-        public void onSuccess(Pair<String, Pair<String, String>[]> result) {
-            if (mRequest != null) {
-                mRequest = null;
-                mArchiveFormParamOr = result.first;
-                mArchiveList = result.second;
-                bind(result.second);
-            }
-        }
-
-        @Override
-        public void onFailure(Exception e) {
-            mRequest = null;
-            Context context = getEHContext();
-            if (null != context && null != mProgressView && null != mErrorText && null != mListView) {
-                mProgressView.setVisibility(View.GONE);
-                mErrorText.setVisibility(View.VISIBLE);
-                mListView.setVisibility(View.GONE);
-                mErrorText.setText(ExceptionUtils.getReadableString(e));
-            }
-        }
-
-        @Override
-        public void onCancel() {
-            mRequest = null;
-        }
-    }
+    // endregion
 }

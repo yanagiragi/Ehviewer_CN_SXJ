@@ -56,7 +56,6 @@ import androidx.recyclerview.widget.SimpleItemAnimator;
 import androidx.recyclerview.widget.StaggeredGridLayoutManager;
 
 import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.github.amlcurran.showcaseview.SimpleShowcaseEventListener;
 import com.github.amlcurran.showcaseview.targets.PointTarget;
@@ -114,13 +113,10 @@ import com.google.firebase.crashlytics.FirebaseCrashlytics;
 import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -753,7 +749,7 @@ public class ExternalDownloadsScene extends ToolbarScene
     @Override
     public boolean onMenuItemClick(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.refresh_external_downloads)
+        if (id == R.id.action_refresh_external_downloads)
         {
             updateForLabel();
         }
@@ -765,7 +761,7 @@ public class ExternalDownloadsScene extends ToolbarScene
     }
     // endregion
 
-    // region baseScene
+    // region BaseScene
 
     @Override
     public View onCreateDrawerView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -1268,7 +1264,7 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
 
         if (jsonFile == null) {
-            Toast.makeText(getContext(), R.string.unable_to_read_external_downloads_configs, Toast.LENGTH_SHORT).show(); // TODO: use R.String later
+            Toast.makeText(getContext(), R.string.unable_to_read_external_downloads_configs, Toast.LENGTH_SHORT).show();
             return list;
         }
         else {
