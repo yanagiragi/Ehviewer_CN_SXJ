@@ -391,10 +391,10 @@ public class ExternalDownloadsScene extends ToolbarScene
             if (mFile == null) {
                 if (mInfo.thumb.startsWith("http")) {
                     var externalDownloadDir = getDefaultExternalDownloadDir();
-                    var dir = UniFile.fromFile(new File(externalDownloadDir + "/" + ".thumbnail"));
+                    var dir = UniFile.fromFile(new File(externalDownloadDir + "/" + "thumbnails"));
                     dir.ensureDir();
 
-                    mFile = dir.createFile(mInfo.gid + "_" + mInfo.thumb.hashCode() + ".thumb");
+                    mFile = dir.createFile(mInfo.gid + "_ex.thumb");
                 }
                 else {
                     mFile = UniFile.fromFile(new File(mInfo.thumb));
