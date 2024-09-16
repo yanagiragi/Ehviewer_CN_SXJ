@@ -1,14 +1,12 @@
 package com.hippo.ehviewer.dao;
 
-import android.os.Parcelable;
+import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
-
-import java.util.Arrays;
 
 public class ExternalDownloadInfo extends DownloadInfo
 {
@@ -17,6 +15,7 @@ public class ExternalDownloadInfo extends DownloadInfo
     public GalleryTagGroup[] tags;
     public GalleryDetail galleryDetail;
     public String localPath;
+    public String absolutePath;
 
     public static ExternalDownloadInfo externalDownloadInfoFromJson(JSONObject object) throws ClassCastException {
         ExternalDownloadInfo info = new ExternalDownloadInfo ();
@@ -33,6 +32,7 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.language = object.getString("language");
         info.size = object.getString("size");
         info.localPath = object.getString("localPath");
+        info.absolutePath = getDefaultExternalDownloadDir() + "/" + info.localPath;
         info.galleryDetail = new GalleryDetail();
 
         JSONArray groupedTags = object.getJSONArray("groupedTags");

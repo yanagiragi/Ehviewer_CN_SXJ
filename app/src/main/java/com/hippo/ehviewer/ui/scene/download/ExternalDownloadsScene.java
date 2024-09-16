@@ -1081,7 +1081,11 @@ public class ExternalDownloadsScene extends ToolbarScene
         for (int i = 0; i < json.size(); i++) {
             var element = json.getJSONObject(i);
             var newDownloadInfo = ExternalDownloadInfo.externalDownloadInfoFromJson(element);
-            list.add(newDownloadInfo);
+
+            var file = new File(newDownloadInfo.absolutePath);
+            if (file.exists()) {
+                list.add(newDownloadInfo);
+            }
         }
 
         return list;
@@ -1130,7 +1134,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             }
 
             var info = list.get(positionInList(position));
-            var file = new File(getDefaultExternalDownloadDir() + "/" + info.localPath);
+            var file = new File(info.absolutePath);
             var contentUri = Uri.fromFile(file);
 
             Intent intent = new Intent(activity, GalleryActivity.class);

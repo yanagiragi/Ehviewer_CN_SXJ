@@ -680,7 +680,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         } else if (mRead == v) {
             GalleryInfo galleryInfo = getGalleryInfo();
             if (galleryInfo != null) {
-                var file = new File(getDefaultExternalDownloadDir() + "/" + mGalleryInfo.localPath);
+                var file = new File(mGalleryInfo.absolutePath);
                 var contentUri = Uri.fromFile(file);
 
                 Intent intent = new Intent(activity, GalleryActivity.class);
