@@ -780,9 +780,7 @@ public class ExternalDownloadsScene extends ToolbarScene
     // region Public Methods
     @SuppressLint("NotifyDataSetChanged")
     public void updateForLabel() {
-        if (mList == null) {
-            mList = readInfoJson(mLabel);
-        }
+        mList = readInfoJson(mLabel);
 
         if (mAdapter != null) {
             mAdapter.notifyDataSetChanged();
