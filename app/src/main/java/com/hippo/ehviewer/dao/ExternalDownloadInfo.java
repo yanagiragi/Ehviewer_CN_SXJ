@@ -8,14 +8,31 @@ import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.client.data.GalleryInfo;
 import com.hippo.ehviewer.client.data.GalleryTagGroup;
 
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+import java.util.ArrayList;
+
 public class ExternalDownloadInfo extends DownloadInfo
 {
     public String language;
     public String size;
     public GalleryTagGroup[] tags;
     public String filePath;
+    public int torrentCount;
 
     private static String externalDownloadDir = "";
+
+    public static String humanReadableByteCountSI(long bytes) {
+        if (-1000 < bytes && bytes < 1000) {
+            return bytes + " B";
+        }
+        CharacterIterator ci = new StringCharacterIterator("kMGTPE");
+        while (bytes <= -999_950 || bytes >= 999_950) {
+            bytes /= 1000;
+            ci.next();
+        }
+        return String.format("%.2f %cB", bytes / 1000.0, ci.current());
+    }
 
     public GalleryDetail ToGalleryDetail() {
         GalleryDetail galleryDetail = new GalleryDetail();
@@ -40,6 +57,10 @@ public class ExternalDownloadInfo extends DownloadInfo
         galleryDetail.titleJpn = titleJpn;
         galleryDetail.token = token;
         galleryDetail.uploader = uploader;
+        galleryDetail.torrentCount = torrentCount;
+        galleryDetail.torrentUrl = "https://exhentai.org/gallerytorrents.php?gid=" + gid + "&t=" + token;
+        galleryDetail.language = language;
+        galleryDetail.size = size;
         return galleryDetail;
     }
 
@@ -55,8 +76,13 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.state = object.getIntValue("state");
         info.time = object.getLongValue("time");
         info.total = object.getIntValue("total");
-        info.language = object.getString("language");
         info.size = object.getString("size");
+        info.torrentCount = object.getIntValue("torrentcount");
+        info.pages = object.getIntValue("filecount");
+        info.posted = object.getString("posted");
+
+        var size = object.getLongValue("filesize");
+        info.size = humanReadableByteCountSI(size);
 
         if (externalDownloadDir.isEmpty()) {
             // cache externalDownloadDir due to its poor performance
@@ -69,6 +95,15 @@ public class ExternalDownloadInfo extends DownloadInfo
         info.thumb = info.thumb.startsWith("http")
                 ? info.thumb
                 : externalDownloadDir + "/" + info.thumb;
+
+        info.tgList = new ArrayList<>();
+        var tags = object.getJSONArray("tags");
+        if (tags != null) {
+            for (int i = 0; i < tags.size(); ++i) {
+                var tag = tags.getString(i);
+                info.tgList.add(tag);
+            }
+        }
 
         JSONArray groupedTags = object.getJSONArray("groupedTags");
         if (groupedTags != null) {
@@ -84,6 +119,28 @@ public class ExternalDownloadInfo extends DownloadInfo
                 for (int j = 0; j < tagList.size(); ++j) {
                     var tag = tagList.getString(j);
                     info.tags[i].addTag(tag);
+                }
+            }
+        }
+
+        info.simpleLanguage = object.getString("simpleLanguage");
+        info.language = object.getString("simpleLanguage");
+        if (info.language == null && info.tags != null) {
+            for(int i = 0; i < info.tags.length; ++i) {
+                if (info.tags[i].groupName.compareTo("language") != 0) {
+                    continue;
+                }
+
+                for(int j = 0; j < info.tags[i].size(); ++j) {
+                    var tag = info.tags[i].getTagAt(j);
+                    if (tag != "translate") {
+                        info.language = tag.substring(0, 1).toUpperCase() + tag.substring(1);
+                        break;
+                    }
+                }
+
+                if (info.language != null) {
+                    break;
                 }
             }
         }

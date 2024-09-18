@@ -877,7 +877,7 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
         mTitle.setText(EhUtils.getSuitableTitle(info));
 
         mLanguage.setText(info.language);
-        mPages.setText("0/" + info.pages + "P");
+        mPages.setText(info.pages + "P");
         mSize.setText(info.size);
         mPosted.setText(info.posted);
         bindTags(info.tags);
