@@ -90,7 +90,7 @@ public class ExternalDownloadInfo extends DownloadInfo
         }
 
         var localPath = object.getString("localPath");
-        info.filePath = externalDownloadDir + "/" + localPath;
+        info.filePath = externalDownloadDir + "/" + localPath.replace("\\","/");
 
         info.thumb = info.thumb.startsWith("http")
                 ? info.thumb
