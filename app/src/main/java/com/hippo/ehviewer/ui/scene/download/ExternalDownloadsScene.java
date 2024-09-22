@@ -79,8 +79,10 @@ import com.hippo.ehviewer.client.EhUtils;
 import com.hippo.ehviewer.dao.DownloadInfo;
 import com.hippo.ehviewer.dao.DownloadLabel;
 import com.hippo.ehviewer.dao.ExternalDownloadInfo;
+import com.hippo.ehviewer.download.DownloadManager;
 import com.hippo.ehviewer.download.DownloadService;
 import com.hippo.ehviewer.spider.SpiderInfo;
+import com.hippo.ehviewer.sync.DownloadListInfosExecutor;
 import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.scene.ToolbarScene;
@@ -117,7 +119,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Dictionary;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -520,6 +524,9 @@ public class ExternalDownloadsScene extends ToolbarScene
     public String mLabel;
     @Nullable
     private List<ExternalDownloadInfo> mList;
+    @Nullable
+    private List<ExternalDownloadInfo> mFullList;
+    private boolean mForceRefresh = false;
 
     /*---------------
      List pagination
@@ -556,6 +563,8 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     private AlertDialog mSearchDialog;
     private SearchBar mSearchBar;
+
+    private ExternalDownloadLabelDraw downloadLabelDraw;
 
     @Nullable
     private PaginationIndicator mPaginationIndicator;
@@ -755,7 +764,9 @@ public class ExternalDownloadsScene extends ToolbarScene
         int id = item.getItemId();
         if (id == R.id.action_refresh_external_downloads)
         {
+            mForceRefresh = true;
             updateForLabel();
+            mForceRefresh = false;
         }
         else {
             Toast.makeText(getEHContext(), R.string.function_not_supported_description, Toast.LENGTH_SHORT).show();
@@ -770,7 +781,12 @@ public class ExternalDownloadsScene extends ToolbarScene
     @Override
     public View onCreateDrawerView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         var view = inflater.inflate(R.layout.bookmarks_draw, container, false);
-        return view;
+
+        if (downloadLabelDraw == null) {
+            downloadLabelDraw = new ExternalDownloadLabelDraw(inflater, container, this);
+        }
+
+        return downloadLabelDraw.createView();
     }
 
     @Override
@@ -783,7 +799,22 @@ public class ExternalDownloadsScene extends ToolbarScene
     // region Public Methods
     @SuppressLint("NotifyDataSetChanged")
     public void updateForLabel() {
-        mList = readInfoJson(mLabel);
+        if (mList == null || mForceRefresh) {
+            mFullList = readInfoJson(mLabel);
+            mList = new ArrayList<>();
+        }
+
+        mList.clear();
+        for(var i = 0; i < mFullList.size(); ++i) {
+            var info = mFullList.get(i);
+            var label = info.getLabel();
+            if (mLabel == null && label == null) {
+                mList.add(info);
+            }
+            if (label != null && mLabel != null && info.getLabel().compareTo(mLabel) == 0) {
+                mList.add(info);
+            }
+        }
 
         if (mAdapter != null) {
             mAdapter.notifyDataSetChanged();
@@ -800,6 +831,25 @@ public class ExternalDownloadsScene extends ToolbarScene
                 mViewTransition.showView(0);
             }
         }
+    }
+
+    public HashMap<String, Integer> getLabelList() {
+        var result = new HashMap<String, Integer>();
+        for(var i = 0; i < mFullList.size(); ++i) {
+            var info = mFullList.get(i);
+            var label = info.getLabel();
+            if (label == null) {
+                label = getString(R.string.default_download_label_name);
+            }
+            var count = result.get(label);
+            if (label != null && count == null) {
+                result.put(label, 1);
+            }
+            else {
+                result.put(label, count + 1);
+            }
+        }
+        return result;
     }
 
     // endregion
