@@ -305,15 +305,7 @@ public class ExternalDownloadsScene extends ToolbarScene
                 holder.title.setText(title);
                 holder.uploader.setText(info.uploader);
                 holder.rating.setRating(info.rating);
-
-                SpiderInfo spiderInfo = mSpiderInfoMap.get(info.gid);
-
-                if (spiderInfo != null) {
-                    int startPage = spiderInfo.startPage + 1;
-                    String readText = startPage + "/" + spiderInfo.pages;
-                    holder.readProgress.setText(readText);
-                }
-
+                holder.readProgress.setText(info.pages + "P");
 
                 TextView category = holder.category;
                 String newCategoryText = EhUtils.getCategory(info.category);
