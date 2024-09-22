@@ -791,7 +791,7 @@ public class ExternalDownloadsScene extends ToolbarScene
 
     @Override
     public int getNavCheckedItem() {
-        return R.id.nav_downloads;
+        return R.id.nav_external_download;
     }
 
     // endregion
