@@ -517,7 +517,8 @@ public class ExternalDownloadsScene extends ToolbarScene
     @Nullable
     private List<ExternalDownloadInfo> mList;
     @Nullable
-    private List<ExternalDownloadInfo> mFullList;
+    private static List<ExternalDownloadInfo> mFullList;
+    private static String externalDownloadInfoCache;
     private boolean mForceRefresh = false;
 
     /*---------------
@@ -792,8 +793,34 @@ public class ExternalDownloadsScene extends ToolbarScene
     @SuppressLint("NotifyDataSetChanged")
     public void updateForLabel() {
         if (mList == null || mForceRefresh) {
-            mFullList = readInfoJson(mLabel);
-            mList = new ArrayList<>();
+            if (mList == null) {
+                mList = new ArrayList<>();
+            }
+
+            File dir = getDefaultExternalDownloadDir();
+            File[] files = dir.listFiles();
+            File jsonFile = null;
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].getName().contains(".json")) {
+                    jsonFile = files[i];
+                    break;
+                }
+            }
+
+            if (jsonFile == null) {
+                Toast.makeText(getContext(), R.string.unable_to_read_external_downloads_configs, Toast.LENGTH_SHORT).show();
+                mFullList = new ArrayList<>();
+                return;
+            }
+            else {
+                Log.i(TAG, "Use " + jsonFile.getPath());
+            }
+
+            var content = FileUtils.read(jsonFile);
+            if (externalDownloadInfoCache == null || content.compareTo(externalDownloadInfoCache) != 0) {
+                mFullList = readInfoJson(content, mLabel);
+                externalDownloadInfoCache = content;
+            }
         }
 
         mList.clear();
@@ -1098,28 +1125,8 @@ public class ExternalDownloadsScene extends ToolbarScene
         return index;
     }
 
-    private List<ExternalDownloadInfo> readInfoJson(String label) {
+    private List<ExternalDownloadInfo> readInfoJson(String content, String label) {
         var list = new ArrayList<ExternalDownloadInfo>();
-
-        File dir = getDefaultExternalDownloadDir();
-        File[] files = dir.listFiles();
-        File jsonFile = null;
-        for (int i = 0; i < files.length; i++) {
-            if (files[i].getName().contains(".json")) {
-                jsonFile = files[i];
-                break;
-            }
-        }
-
-        if (jsonFile == null) {
-            Toast.makeText(getContext(), R.string.unable_to_read_external_downloads_configs, Toast.LENGTH_SHORT).show();
-            return list;
-        }
-        else {
-            Log.i(TAG, "Use " + jsonFile.getPath());
-        }
-
-        var content = FileUtils.read(jsonFile);
         var json = JSONArray.parseArray(content);
         for (int i = 0; i < json.size(); i++) {
             var element = json.getJSONObject(i);
