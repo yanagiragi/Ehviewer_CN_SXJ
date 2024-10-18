@@ -125,6 +125,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class ExternalDownloadsScene extends ToolbarScene
         implements
@@ -817,7 +818,7 @@ public class ExternalDownloadsScene extends ToolbarScene
             }
 
             var content = FileUtils.read(jsonFile);
-            if (externalDownloadInfoCache == null || content.compareTo(externalDownloadInfoCache) != 0) {
+            if (mForceRefresh || externalDownloadInfoCache == null || content.compareTo(externalDownloadInfoCache) != 0) {
                 mFullList = readInfoJson(content, mLabel);
                 externalDownloadInfoCache = content;
             }
@@ -852,8 +853,8 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
     }
 
-    public HashMap<String, Integer> getLabelList() {
-        var result = new HashMap<String, Integer>();
+    public TreeMap<String, Integer> getLabelList() {
+        var result = new TreeMap<String, Integer>();
         for(var i = 0; i < mFullList.size(); ++i) {
             var info = mFullList.get(i);
             var label = info.getLabel();
@@ -868,6 +869,7 @@ public class ExternalDownloadsScene extends ToolbarScene
                 result.put(label, count + 1);
             }
         }
+
         return result;
     }
 
