@@ -17,8 +17,6 @@
 package com.hippo.ehviewer.ui.scene.download;
 
 import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
-import static com.hippo.ehviewer.spider.SpiderDen.getGalleryDownloadDir;
-import static com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene.KEY_COME_FROM_DOWNLOAD;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -232,7 +230,6 @@ public class ExternalDownloadsScene extends ToolbarScene
                 Bundle args = new Bundle();
                 args.putString(GalleryDetailScene.KEY_ACTION, GalleryDetailScene.ACTION_DOWNLOAD_GALLERY_INFO);
                 args.putParcelable(GalleryDetailScene.KEY_GALLERY_INFO, list.get(positionInList(index)));
-                args.putBoolean(KEY_COME_FROM_DOWNLOAD, true);
                 Announcer announcer = new Announcer(ExternalGalleryDetailScene.class).setArgs(args);
                 announcer.setTranHelper(new EnterGalleryDetailTransaction(thumb));
                 startScene(announcer);
