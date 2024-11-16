@@ -116,12 +116,15 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -488,6 +491,43 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
     }
 
+    public class LabelComparator implements Comparator<String>
+    {
+        private final Collator collator;
+
+        public boolean isHiragana(char c) {
+            return c >= '\u3040' && c <= '\u309F';
+        }
+
+        public boolean isKatakana(char c) {
+            return (c >= '\u30A0' && c <= '\u30FF') || (c >= '\uFF65' && c <= '\uFF9F');
+        }
+
+        public LabelComparator() {
+            collator = Collator.getInstance(Locale.JAPAN);
+            collator.setStrength(Collator.PRIMARY);
+        }
+
+        @Override
+        public int compare(String left, String right) {
+            if (left == "Default") {
+                return -1;
+            }
+            else if (right == "Default") {
+                return Integer.MAX_VALUE;
+            }
+
+            if (
+                    (isHiragana(left.charAt(0)) || isKatakana(left.charAt(0))) &&
+                    (isHiragana(right.charAt(0)) || isKatakana(right.charAt(0)))
+            ) {
+                return collator.compare(left, right);
+            }
+
+            return left.toLowerCase().compareTo(right.toLowerCase());
+        }
+    }
+
     // endregion
 
     // region Constants
@@ -850,8 +890,8 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
     }
 
-    public TreeMap<String, Integer> getLabelList() {
-        var result = new TreeMap<String, Integer>();
+    public TreeMap<String, Integer> getSortedLabelList() {
+        var result = new TreeMap<String, Integer>(new LabelComparator());
         for(var i = 0; i < mFullList.size(); ++i) {
             var info = mFullList.get(i);
             var label = info.getLabel();

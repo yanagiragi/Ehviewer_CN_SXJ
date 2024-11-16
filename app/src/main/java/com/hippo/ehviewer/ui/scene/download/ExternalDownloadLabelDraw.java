@@ -48,7 +48,7 @@ public class ExternalDownloadLabelDraw {
         AssertUtils.assertNotNull(context);
 
         toolbar = view.findViewById(R.id.toolbar);
-        toolbar.setTitle(R.string.download_labels);
+        toolbar.setTitle(R.string.external_download_labels);
         toolbar.inflateMenu(R.menu.drawer_download);
         toolbar.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
@@ -63,7 +63,7 @@ public class ExternalDownloadLabelDraw {
             return false;
         });
 
-        var dict = scene.getLabelList();
+        var dict = scene.getSortedLabelList();
         var labels = new ArrayList<String>();
         labels.add(scene.getString(R.string.default_download_label_name));
         for (var label : dict.keySet()) {

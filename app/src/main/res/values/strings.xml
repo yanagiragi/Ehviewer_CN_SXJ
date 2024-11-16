@@ -439,6 +439,7 @@
     <string name="default_download_label_name">Default</string>
     <string name="download_move_dialog_title">Move</string>
     <string name="download_labels">Download labels</string>
+    <string name="external_download_labels">Labels</string>
     <string name="download_sort_list">Sort</string>
     <string name="download_filter_by_status">Filter by status</string>
     <string name="download_status_all">All</string>
