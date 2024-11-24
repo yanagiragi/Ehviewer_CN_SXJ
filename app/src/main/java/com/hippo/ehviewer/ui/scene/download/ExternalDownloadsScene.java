@@ -60,7 +60,7 @@ import com.github.amlcurran.showcaseview.targets.PointTarget;
 import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
-import com.hippo.conaco.DataContainer;
+// import com.hippo.conaco.DataContainer;
 import com.hippo.conaco.ProgressNotifier;
 import com.hippo.drawable.AddDeleteDrawable;
 import com.hippo.drawerlayout.DrawerLayout;
@@ -301,7 +301,10 @@ public class ExternalDownloadsScene extends ToolbarScene
                 DownloadInfo info = mList.get(pos);
 
                 String title = EhUtils.getSuitableTitle(info);
-                holder.thumb.load(EhCacheKeyFactory.getExternalThumbKey(info.gid, info.thumb), info.thumb, new ThumbDataContainer(info), info.thumb.startsWith("http"));
+
+                // TODO: Disable custom thumbnail to fix error for now
+                // holder.thumb.load(EhCacheKeyFactory.getExternalThumbKey(info.gid, info.thumb), info.thumb, new ThumbDataContainer(info), info.thumb.startsWith("http"));
+                holder.thumb.load(EhCacheKeyFactory.getExternalThumbKey(info.gid, info.thumb), info.thumb, info.thumb.startsWith("http"));
 
                 holder.title.setText(title);
                 holder.uploader.setText(info.uploader);
@@ -374,6 +377,8 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
     }
 
+    // TODO: Disable custom thumbnail to fix error for now
+    /*
     private class ThumbDataContainer implements DataContainer {
 
         private final DownloadInfo mInfo;
@@ -445,7 +450,7 @@ public class ExternalDownloadsScene extends ToolbarScene
                 mFile.delete();
             }
         }
-    }
+    }*/
 
     public class MyPageChangeListener implements PaginationIndicator.OnChangedListener {
 
@@ -919,7 +924,7 @@ public class ExternalDownloadsScene extends ToolbarScene
         }
 
         if (ACTION_CLEAR_DOWNLOAD_SERVICE.equals(args.getString(KEY_ACTION))) {
-            DownloadService.clear();
+            DownloadService.Companion.clear();
         }
 
         // long gid;

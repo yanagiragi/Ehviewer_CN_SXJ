@@ -1,7 +1,91 @@
 # [感谢名单](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/thankyou.md) 
 # [常见问题汇总](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/EhviewerIssue.md)
 
-# 2024/10/01 : 紧急修复
+# 2024/11/15 : 
+ ###  新版发布1.9.9.4
+ ###  设置模块从android.preference迁移至androidx.preference
+ ###  修复低版本Android图像被裁剪的问题
+ ###  修复压缩包解码时的闪退问题
+ ###  catch一个内存溢出问题
+ ###  在解码大图时添加缩放限制，以减少内存溢出的可能
+ ###  修复下载图片时保存的图片格式与实际格式不相符的问题
+
+   点击前往下载：[EhViewer (20.8 MB)](https://appteka.store/app/2f4r195618)   
+   点击前往下载：[Microsoft App Center](install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)   
+   点击前往下载：[百度云](https://pan.baidu.com/s/1uzsCAKHYAmk52ePLOOXv_Q)  密码:pyn2   
+   点击前往下载（电脑端可正常下载）：[蓝奏云](https://wwsu.lanzouj.com/ijvzJ2f4vn3e)  密码:6jup   
+   点击前往下载：[github](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)    
+   点击前往赏饭：[要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)    
+   Torrent链接：magnet:?xt=urn:btih:dc287a52ec4d5d6e55081a31da981bdd7746dfa6&xt=urn:btmh:1220f3b838f0781787524a63a4900c6e67123ad41092442d7e1e6f4805c8c3454cb6&dn=EhViewer-1.9.9.4.apk     
+   Telegram群:https://t.me/+WyclP8pPlk-JfbwS    
+   Telegram通知群:https://t.me/Ehviewer_xiaojieonly_channel
+
+# 2024/11/06 : 紧急修复(尝试支持Android 9以下手机)
+ ###  新版发布1.9.9.3
+ ###  为低版本提供webp支持，但是解码webp动图会闪退
+ ###  优化数据读取顺序，现在优先从下载目录读取数据
+ ###  更新了host文件
+
+   点击前往下载：[EhViewer (20.8 MB)](https://appteka.store/app/2f4r195618)   
+   点击前往下载：[Microsoft App Center](install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)   
+   点击前往下载：[百度云](https://pan.baidu.com/s/12M25F1AXn6hf200wGOAOgg)  密码:3z8r   
+   点击前往下载（电脑端可正常下载）：[蓝奏云](https://wwsu.lanzouj.com/iHX502efu3vg)  密码:aqv6   
+   点击前往下载：[github](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)    
+   点击前往赏饭：[要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)    
+   Torrent链接：magnet:?xt=urn:btih:8c4e9717d916cfe993bf77370c2930875725e051&xt=urn:btmh:122062a2041b2e017e7b16bed7dcd220f6d33b124603acd53653919a32759dafa317&dn=EhViewer-1.9.9.3.apk     
+   Telegram群:https://t.me/+WyclP8pPlk-JfbwS    
+   Telegram通知群:https://t.me/Ehviewer_xiaojieonly_channel
+
+# 2024/11/04 : 紧急修复(不再支持Android 9以下手机)
+ ###  新版发布1.9.9.2
+ ###  修复设置了E站头像导致app崩溃的问题
+ ###  修复了头像图片尺寸小于头像框的情况时，图片没有自动拉伸的问题
+ ###  更新了host文件
+
+   点击前往下载：[EhViewer (20.8 MB)](https://appteka.store/app/2f4r195618)   
+   点击前往下载：[Microsoft App Center](install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)   
+   点击前往下载：[百度云](https://pan.baidu.com/s/1RQtjwOPlsuGUVDZQ5CEZlg)  密码:5p8l   
+   点击前往下载（电脑端可正常下载）：[蓝奏云](https://wwsu.lanzouj.com/i2qMc2ecmh4h)  密码:53o1   
+   点击前往下载：[github](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)    
+   点击前往赏饭：[要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)    
+   Torrent链接：magnet:?xt=urn:btih:c8bf514b5a3ceae56dcfd49a6ab36be92aa0b6e5&xt=urn:btmh:12209b02d8ae5814e8e9667caa82a71683783f8b2fbc15918d3c9c536662fef391eb&dn=EhViewer-1.9.9.2.apk     
+   Telegram群:https://t.me/+WyclP8pPlk-JfbwS    
+   Telegram通知群:https://t.me/Ehviewer_xiaojieonly_channel
+
+# 2024/11/04 : 紧急修复(不再支持Android 9以下手机)
+ ###  新版发布1.9.9.1
+ ###  紧急更新webp格式支持
+
+   点击前往下载：[EhViewer (20.8 MB)](https://appteka.store/app/2f4r195618)   
+   点击前往下载：[Microsoft App Center](install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)   
+   点击前往下载：[百度云](https://pan.baidu.com/s/1UYLjcVUM_6Y9vLo85oIAEQ)  密码:3f4g   
+   点击前往下载（电脑端可正常下载）：[蓝奏云](https://wwsu.lanzouj.com/iJPTF2e9p5cd)  密码:73ym   
+   点击前往下载：[github](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)    
+   点击前往赏饭：[要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)    
+   Torrent链接：magnet:?xt=urn:btih:44ee110643fb1830843e197feb6403503fa554c7&xt=urn:btmh:122047ea931afbe25cb0f4c5fa74a57c03194ed8f2cb76e0d070b99b8a99b3c31b50&dn=EhViewer-1.9.9.1.apk   
+   Telegram群:https://t.me/+WyclP8pPlk-JfbwS    
+   Telegram通知群:https://t.me/Ehviewer_xiaojieonly_channel
+
+
+# 2024/10/29 : 紧急修复
+ ###  新版发布1.9.9.0
+ ###  紧急修复解析详情页的正则表达式
+ ###  修复画廊详情H@H功能解析失败的问题
+ ###  紧急修复解析详情页的正则表达式在Gallery Page Thumbnail Labeling设置不为none时解析失败的问题
+ ###  紧急修复解析详情页的正则表达式在Thumbnail Settings为small时解析失败的问题
+
+
+   点击前往下载：[EhViewer (20.8 MB)](https://appteka.store/app/2f4r195618)   
+   点击前往下载：[Microsoft App Center](install.appcenter.ms/users/xiaojieonly/apps/com.xjs.ehviewer/distribution_groups/let's%20roll)   
+   点击前往下载：[百度云](https://pan.baidu.com/s/1J4cT2y_6cKOaSBKzdghVKg)  密码:zv1r   
+   点击前往下载（电脑端可正常下载）：[蓝奏云](https://wwsu.lanzouj.com/i13jD2dof07c)  密码:9sqo   
+   点击前往下载：[github](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/releases)    
+   点击前往赏饭：[要饭嘛不寒掺](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/feedauthor/support.md)    
+   Torrent链接：magnet:?xt=urn:btih:f7f59ed53f0a0b9a8b3d174efaf1b9cfb43f7041&dn=EhViewer-1.9.8.9.apk   
+   Telegram群:https://t.me/+WyclP8pPlk-JfbwS    
+   Telegram通知群:https://t.me/Ehviewer_xiaojieonly_channel
+
+# 2024/10/25 : 紧急修复
  ###  新版发布1.9.8.9（如果出现问题请覆盖安装旧版本）
  ###  修复了一些可能导致崩溃的问题
  ###  修复红米澎湃os里站出现空指针报错的问题

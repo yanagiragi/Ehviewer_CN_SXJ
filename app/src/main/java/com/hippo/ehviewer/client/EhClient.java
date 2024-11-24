@@ -16,6 +16,7 @@
 
 package com.hippo.ehviewer.client;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
 
@@ -26,7 +27,7 @@ import com.hippo.ehviewer.client.data.userTag.UserTag;
 import com.hippo.ehviewer.client.exception.CancelledException;
 import com.hippo.util.ExceptionUtils;
 import com.hippo.util.IoThreadPoolExecutor;
-import com.hippo.yorozuya.SimpleHandler;
+import com.hippo.lib.yorozuya.SimpleHandler;
 
 import java.io.File;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -88,6 +89,7 @@ public class EhClient {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     public class Task extends AsyncTask<Object, Void, Object> {
 
         private final int mMethod;
