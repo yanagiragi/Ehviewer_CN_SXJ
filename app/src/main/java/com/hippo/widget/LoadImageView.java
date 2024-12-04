@@ -47,6 +47,7 @@ import com.hippo.conaco.Unikery;
 import com.hippo.drawable.PreciselyClipDrawable;
 import com.hippo.ehviewer.EhApplication;
 import com.hippo.ehviewer.EhDB;
+import com.hippo.ehviewer.ImageBitmapHelper;
 import com.hippo.ehviewer.R;
 import com.hippo.ehviewer.client.EhCacheKeyFactory;
 import com.hippo.ehviewer.client.EhClient;
@@ -54,8 +55,10 @@ import com.hippo.ehviewer.client.EhRequest;
 import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.dao.DownloadInfo;
+import com.hippo.io.FileInputStreamPipe;
 import com.hippo.lib.image.Image;
 import com.hippo.lib.yorozuya.IntIdGenerator;
+import com.hippo.streampipe.InputStreamPipe;
 import com.hippo.util.DrawableManager;
 import com.hippo.yorozuya.IOUtils;
 
@@ -251,42 +254,27 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         mUrl = url;
         mUseNetwork = useNetwork;
 
-        // TODO: Disable custom thumbnail to fix error for now
-        if (!mUseNetwork) {/*
+        if (!mUseNetwork) {
             Log.i(TAG, "Detect mUseNetwork = false, load thumbnail using local disk path: " + mUrl);
 
-            InputStreamPipe inputStreamPipe = mContainer == null ? null : mContainer.get();
-            InputStream inputStream = null;
+            File file = new File(mUrl);
+            InputStreamPipe inputStreamPipe = new FileInputStreamPipe(file);
+            ImageBitmapHelper ImageHelper = new ImageBitmapHelper();
 
             try {
-                if (inputStreamPipe != null) {
-                    Log.i(TAG, "Detect cache exists, read file in cache");
-                    inputStream = inputStreamPipe.open();
-                    ImageBitmap image = ImageBitmap.decode(inputStream);
+                Image image = ImageHelper.decode(inputStreamPipe);
+                if (image != null) {
                     onGetValue(image, Conaco.SOURCE_DISK);
+                } else {
+                    Log.i(TAG, "Unable to read file: " + mUrl);
                 }
-                else {
-                    Log.i(TAG, "Detect cache does not exists, read file: " + mUrl);
-                    var file = new File(mUrl);
-                    inputStream = new FileInputStream(file);
-                    ImageBitmap image = ImageBitmap.decode(inputStream);
-                    onGetValue(image, Conaco.SOURCE_DISK);
-                    if (mContainer != null)
-                    {
-                        mContainer.save(inputStream, 0L, null, null);
-                    }
-                }
-
-            } catch (FileNotFoundException e) {
-                Log.e(TAG, "File not found: " + mUrl);
-            }  catch (IOException e) {
-                Log.e(TAG, "IOException: " + mUrl);
-            }
-            finally {
-                IOUtils.closeQuietly(inputStream);
+            } catch (java.lang.Exception exception) {
+                Log.i(TAG, "Unable to read file: " + mUrl);
+            } finally {
+                inputStreamPipe.close();
             }
 
-            return;*/
+            return;
         }
 
         ConacoTask.Builder<Image> builder = new ConacoTask.Builder<Image>()
