@@ -48,7 +48,24 @@ public class ExternalDownloadLabelDraw {
         AssertUtils.assertNotNull(context);
 
         toolbar = view.findViewById(R.id.toolbar);
-        toolbar.setTitle(R.string.external_download_labels);
+
+        var dict = scene.getSortedLabelList();
+        var labelCount = dict.size();
+        var totalCount = 0;
+
+        var labels = new ArrayList<String>();
+        labels.add(scene.getString(R.string.default_download_label_name));
+        for (var label : dict.keySet()) {
+            totalCount += dict.get(label);
+            if (labels.contains(label)) {
+                continue;
+            }
+            labels.add(label);
+        }
+        var external_download_labels = context.getText(R.string.external_download_labels);
+        var title = String.format("%s (%d/%d)", external_download_labels, labelCount, totalCount);
+        toolbar.setTitle(title);
+
         toolbar.inflateMenu(R.menu.drawer_download);
         toolbar.setOnMenuItemClickListener(item -> {
             int id = item.getItemId();
@@ -62,16 +79,6 @@ public class ExternalDownloadLabelDraw {
             }
             return false;
         });
-
-        var dict = scene.getSortedLabelList();
-        var labels = new ArrayList<String>();
-        labels.add(scene.getString(R.string.default_download_label_name));
-        for (var label : dict.keySet()) {
-            if (labels.contains(label)) {
-                continue;
-            }
-            labels.add(label);
-        }
 
         // TODO handle download label items update
         final List<DownloadLabelItem> downloadLabelList = new ArrayList<>();
