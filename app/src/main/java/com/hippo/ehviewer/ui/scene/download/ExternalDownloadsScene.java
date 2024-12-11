@@ -787,6 +787,8 @@ public class ExternalDownloadsScene extends ToolbarScene
                 mFullList = readInfoJson(content, mLabel);
                 externalDownloadInfoCache = content;
             }
+
+            mLabel = null;
         }
 
         mList.clear();
@@ -804,6 +806,11 @@ public class ExternalDownloadsScene extends ToolbarScene
         if (mAdapter != null) {
             mAdapter.notifyDataSetChanged();
         }
+
+        if (downloadLabelDraw != null) {
+            downloadLabelDraw.updateLabel(null);
+        }
+
         updateTitle();
         updatePaginationIndicator();
     }
