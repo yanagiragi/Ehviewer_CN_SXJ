@@ -810,6 +810,51 @@ public class Settings {
         putBoolean(KEY_DOWNLOAD_ORIGIN_IMAGE, value);
     }
 
+
+    /********************
+     ****** External Download
+     ********************/
+
+    public static final String KEY_EXTERNAL_DOWNLOAD_SAVE_SCHEME = "external_image_scheme";
+    public static final String KEY_EXTERNAL_DOWNLOAD_SAVE_AUTHORITY = "external_image_authority";
+    public static final String KEY_EXTERNAL_DOWNLOAD_SAVE_PATH = "external_image_path";
+    public static final String KEY_EXTERNAL_DOWNLOAD_SAVE_QUERY = "external_image_query";
+    public static final String KEY_EXTERNAL_DOWNLOAD_SAVE_FRAGMENT = "external_image_fragment";
+
+    @Nullable
+    public static UniFile getExternalDownloadLocation() {
+        UniFile dir = null;
+        try {
+            Uri.Builder builder = new Uri.Builder();
+            builder.scheme(getString(KEY_EXTERNAL_DOWNLOAD_SAVE_SCHEME, null));
+            builder.encodedAuthority(getString(KEY_EXTERNAL_DOWNLOAD_SAVE_AUTHORITY, null));
+            builder.encodedPath(getString(KEY_EXTERNAL_DOWNLOAD_SAVE_PATH, null));
+            builder.encodedQuery(getString(KEY_EXTERNAL_DOWNLOAD_SAVE_QUERY, null));
+            builder.encodedFragment(getString(KEY_DOWNLOAD_SAVE_FRAGMENT, null));
+            dir = UniFile.fromUri(sContext, builder.build());
+        } catch (Throwable e) {
+            ExceptionUtils.throwIfFatal(e);
+            // Ignore
+        }
+        return dir != null ? dir : UniFile.fromFile(AppConfig.getDefaultExternalDownloadDir());
+    }
+
+    public static void putExternalDownloadLocation(@NonNull UniFile location) {
+        Uri uri = location.getUri();
+        putString(KEY_EXTERNAL_DOWNLOAD_SAVE_SCHEME, uri.getScheme());
+        putString(KEY_EXTERNAL_DOWNLOAD_SAVE_AUTHORITY, uri.getEncodedAuthority());
+        putString(KEY_EXTERNAL_DOWNLOAD_SAVE_PATH, uri.getEncodedPath());
+        putString(KEY_EXTERNAL_DOWNLOAD_SAVE_QUERY, uri.getEncodedQuery());
+        putString(KEY_EXTERNAL_DOWNLOAD_SAVE_FRAGMENT, uri.getEncodedFragment());
+
+        if (getMediaScan()) {
+            CommonOperations.removeNoMediaFile(location);
+        } else {
+            CommonOperations.ensureNoMediaFile(location);
+        }
+    }
+
+
     /********************
      ****** Favorites
      ********************/

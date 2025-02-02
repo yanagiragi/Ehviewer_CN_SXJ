@@ -17,6 +17,7 @@
 package com.hippo.ehviewer.ui.scene.download;
 
 import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
+import static com.hippo.ehviewer.Settings.getExternalDownloadLocation;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -763,12 +764,12 @@ public class ExternalDownloadsScene extends ToolbarScene
                 mList = new ArrayList<>();
             }
 
-            File dir = getDefaultExternalDownloadDir();
-            File[] files = dir.listFiles();
+            UniFile externalDownloadLocation = getExternalDownloadLocation();
+            UniFile[] files = externalDownloadLocation.listFiles();
             File jsonFile = null;
             for (int i = 0; i < files.length; i++) {
                 if (files[i].getName().contains(".json")) {
-                    jsonFile = files[i];
+                    jsonFile = new File(files[i].getUri().getPath());
                     break;
                 }
             }

@@ -1,6 +1,7 @@
 package com.hippo.ehviewer.dao;
 
 import static com.hippo.ehviewer.AppConfig.getDefaultExternalDownloadDir;
+import static com.hippo.ehviewer.Settings.getExternalDownloadLocation;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -86,7 +87,7 @@ public class ExternalDownloadInfo extends DownloadInfo
 
         if (externalDownloadDir.isEmpty()) {
             // cache externalDownloadDir due to its poor performance
-            externalDownloadDir = getDefaultExternalDownloadDir().getPath();
+            externalDownloadDir = getExternalDownloadLocation().getUri().getPath();
         }
 
         var localPath = object.getString("localPath");

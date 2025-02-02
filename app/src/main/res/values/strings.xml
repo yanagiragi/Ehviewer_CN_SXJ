@@ -670,6 +670,15 @@
     <string name="settings_download_clean_redundancy_no_redundancy">No redundancy</string>
     <string name="settings_download_clean_redundancy_done">Redundancy cleaning completed, clean-up %d items totally</string>
 
+    <string name="settings_external_download">External Download</string>
+    <string name="settings_external_download_download_location">External Download location</string>
+    <string name="settings_external_download_invalid_download_location">Invalid download location</string>
+    <string name="settings_external_download_cant_get_download_location">Can\'t get download location</string>
+    <string name="settings_external_download_pick_dir_kk">On Android 4.4+, apps can\'t write any data on your external SD card, unless you root the system and apply a patch. But &lt;SD card&gt;/Android/data/com.hippo.ehviewer is an exception. It is writable for this app.</string>
+    <string name="settings_external_download_pick_dir_l">Android 5.0+ provides new API to write on external SD card. Tap the \"DOCUMENT\" if you want to set SD card as download location.</string>
+    <string name="settings_external_download_document">Document</string>
+    <string name="settings_external_download_continue">Continue</string>
+
     <string name="settings_advanced">Advanced</string>
     <string name="settings_advanced_save_parse_error_body">Save html content when parsing error</string>
     <string name="settings_advanced_save_parse_error_body_summary">Html content may be privacy-sensitive</string>
