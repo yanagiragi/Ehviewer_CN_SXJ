@@ -198,9 +198,11 @@
     <!-- Update -->
     <string name="new_version">New version</string>
     <string name="update">Update</string>
+    <string name="update_fail">Check for updates failed</string>
     <string name="update_to">Update to</string>
     <string name="no_updates_available">Already the latest version</string>
     <string name="update_plain">Version: %1$s\nSize: %2$s\n\n%3$s</string>
+    <string name="update_fail_info">Click Yes to jump to Github homepage</string>
     <string name="update_to_date">You are using the latest version of EhViewer.</string>
     <string name="update_ignore">Ignore</string>
 
@@ -550,8 +552,8 @@
     <string name="settings_eh_sign_out_tip">You have signed out. Restart the application to sign in again</string>
     <string name="settings_eh_identity_cookies">Identity cookies</string>
     <string name="settings_eh_identity_cookies_summary">Cookies can be used to sign in</string>
-    <string name="settings_eh_lock_cookies_igneous">Lock the Cookie igneous field</string>
-    <string name="settings_eh_lock_cookies_igneous_summary">It is not recommended to enable it except in special circumstances.</string>
+<!--    <string name="settings_eh_lock_cookies_igneous">Lock the Cookie igneous field</string>-->
+<!--    <string name="settings_eh_lock_cookies_igneous_summary">It is not recommended to enable it except in special circumstances.</string>-->
     <string name="settings_eh_identity_cookies_signed">Identity cookies can be used to sign in to this account.&lt;br&gt;&lt;b&gt;KEEP IT SAFE&lt;/b&gt;&lt;br&gt;&lt;br&gt;%s</string>
     <string name="settings_eh_identity_cookies_tourist">Not signed in.</string>
     <string name="settings_eh_identity_cookies_copy">Copy</string>
@@ -588,6 +590,7 @@
     <string name="settings_eh_excluded_tag_namespaces_summary">Exclude certain namespaces from a default tag search</string>
     <string name="settings_eh_show_jpn_title">Show Japanese title</string>
     <string name="settings_eh_show_gallery_comment">Show Gallery Comment</string>
+    <string name="settings_eh_show_gallery_rating">Show Gallery Rating</string>
     <string name="settings_eh_show_eh_event">Show EH events</string>
     <string name="settings_eh_show_eh_limits">Show EH limits</string>
     <string name="settings_eh_show_jpn_title_summary">Require enabling Japanese Title in Settings on EHentai website</string>
@@ -924,8 +927,7 @@
     <string name="try_again">Try Again</string>
     <string name="open_directory">Open Directory</string>
     <string name="downloading">Downloading…… Please Try Later</string>
-    <string name="torrent_exist">File already exists</string>
-    <string name="empty_subscription">Subscription is empty</string>
+    <string name="torrent_exist">File already exists: %s</string>
 
     <!--  订阅服务  -->
     <string name="subscription_watched">Watched</string>
@@ -934,6 +936,8 @@
     <string name="can_not_use_this_tag">Tags are not available</string>
     <string name="add_tag_dialog_title">Add Tag</string>
     <string name="tag_title">Tag</string>
+    <string name="empty_subscription">Subscription is empty</string>
+    <string name="subscription_success">%s success</string>
 
     <string name="yes">Yes</string>
     <string name="cancel">Cancel</string>
@@ -976,6 +980,7 @@
     <string name="from_hentai_home">%s from Hentai@Home</string>
     <string name="current_moderation_power">Current Moderation Power %s</string>
     <string name="reset_cost">Cost %s To Reset</string>
+    <string name="ip_base_limits">IP-based limits</string>
     <string name="limit_unneed_reset">There is currently no need to reset quotas, please try again after refreshing~</string>
 
 
@@ -1016,5 +1021,7 @@
     <string name="sort_by_pub_time">Published Time</string>
     <string name="sort_by_fav_time">Favorited Time</string>
     <string name="refresh_external_downloads">Refresh External Downloads</string>
+    <string name="settings_eh_sign_out_restart">Automatically restarting for you, please wait</string>
+
 
 </resources>

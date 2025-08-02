@@ -219,9 +219,12 @@ public class EhClient {
             if (mCallback != null) {
                 //noinspection StatementWithEmptyBody
                 if (!(result instanceof CancelledException)) {
-                    if (result instanceof Exception) {
+                    if (result instanceof Throwable) {
                         mCallback.onFailure((Exception) result);
-                        FirebaseCrashlytics.getInstance().recordException((Throwable) result);
+                        boolean enabled = FirebaseCrashlytics.getInstance().isCrashlyticsCollectionEnabled();
+                        if (enabled) {
+                            FirebaseCrashlytics.getInstance().recordException((Throwable) result);
+                        }
                     } else {
                         mCallback.onSuccess(result);
                     }

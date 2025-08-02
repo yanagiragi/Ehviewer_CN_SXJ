@@ -21,8 +21,6 @@ import static com.hippo.ehviewer.client.EhConfig.TORRENT_PATH;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -87,6 +85,7 @@ import com.hippo.ehviewer.client.data.GalleryTagGroup;
 import com.hippo.ehviewer.client.data.ListUrlBuilder;
 import com.hippo.ehviewer.client.data.PreviewSet;
 import com.hippo.ehviewer.client.data.TorrentDownloadMessage;
+import com.hippo.ehviewer.client.data.userTag.UserTagList;
 import com.hippo.ehviewer.client.exception.NoHAtHClientException;
 import com.hippo.ehviewer.client.parser.RateGalleryParser;
 import com.hippo.ehviewer.dao.DownloadInfo;
@@ -99,14 +98,14 @@ import com.hippo.ehviewer.ui.dialog.ArchiverDownloadDialog;
 import com.hippo.ehviewer.ui.scene.BaseScene;
 import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
 import com.hippo.ehviewer.ui.scene.EhCallback;
-import com.hippo.ehviewer.ui.scene.FavoritesScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.FavoritesScene;
 import com.hippo.ehviewer.ui.scene.GalleryCommentsScene;
 import com.hippo.ehviewer.ui.scene.GalleryInfoScene;
 import com.hippo.ehviewer.ui.scene.GalleryPreviewsScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListSceneDialog;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
-import com.hippo.ehviewer.util.AppCenterAnalytics;
 import com.hippo.ehviewer.util.ClipboardUtil;
 import com.hippo.ehviewer.widget.ArchiverDownloadProgress;
 import com.hippo.ehviewer.widget.GalleryRatingBar;
@@ -321,8 +320,8 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     private View torrentDownloadView;
     @Nullable
     private TextView downloadProgress;
-
     private GalleryUpdateDialog myUpdateDialog;
+    private GalleryListSceneDialog tagDialog;
     @Nullable
     private Handler torrentDownloadHandler = null;
 
@@ -332,6 +331,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     private MainActivity activity;
 
     private ExecutorService executorService;
+    private EhTagDatabase ehTags;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
@@ -462,7 +462,6 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             properties = new HashMap<>();
             properties.put("Title", mGalleryInfo.title);
             properties.put("Time", dateFormat.format(date));
-            AppCenterAnalytics.trackEvent("进入画廊详情页", properties);
         }
 
         torrentDownloadHandler = new TorrentDownloadHandler();
@@ -642,6 +641,10 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
         if (!Settings.getShowGalleryComment()) {
             mComments.setVisibility(View.GONE);
             mCommentsText.setVisibility(View.GONE);
+        }
+        if(!Settings.getShowGalleryRating()){
+            mRating.setVisibility(View.INVISIBLE);
+            mRatingText.setVisibility(View.INVISIBLE);
         }
 
         Ripple.addRipple(mComments, isDarkTheme);
@@ -1088,7 +1091,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             mNoTags.setVisibility(View.GONE);
         }
 
-        EhTagDatabase ehTags = Settings.getShowTagTranslations() ? EhTagDatabase.getInstance(context) : null;
+        ehTags = Settings.getShowTagTranslations() ? EhTagDatabase.getInstance(context) : null;
 
         int colorTag = AttrResources.getAttrColor(context, R.attr.tagBackgroundColor);
         int colorName = AttrResources.getAttrColor(context, R.attr.tagGroupBackgroundColor);
@@ -1606,42 +1609,20 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
     }
 
     private void showTagDialog(final String tag) {
-        final Context context = getEHContext();
-        if (null == context) {
-            return;
+        if (tagDialog == null) {
+            tagDialog = new GalleryListSceneDialog(this);
         }
-        String temp;
-        int index = tag.indexOf(':');
-        if (index >= 0) {
-            temp = tag.substring(index + 1);
-        } else {
-            temp = tag;
+        if (ehTags == null) {
+            ehTags = EhTagDatabase.getInstance(mContext);
         }
-        final String tag2 = temp;
-
-        new AlertDialog.Builder(context)
-                .setTitle(tag)
-                .setItems(R.array.tag_menu_entries, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            UrlOpener.openUrl(context, EhUrl.getTagDefinitionUrl(tag2), false);
-                            break;
-                        case 1:
-                            showFilterTagDialog(tag);
-                            break;
-                    }
-                })
-                .setNegativeButton(R.string.copy_tag, (dialog, which) -> copyTag(tag))
-                .show();
+        tagDialog.setTagName(tag);
+        tagDialog.showTagLongPressDialog(ehTags);
     }
 
-    private void copyTag(String tag) {
-        Context context = requireContext();
-        ClipboardManager manager = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-        manager.setPrimaryClip(ClipData.newPlainText(null, tag));
-        Toast.makeText(context, R.string.gallery_tag_copy, Toast.LENGTH_LONG).show();
+    @Override
+    public void setTagList(UserTagList result) {
+        super.setTagList(result);
     }
-
 
     @Override
     public boolean onLongClick(View v) {
@@ -1908,12 +1889,12 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
      * 这个方法写的跟屎一样
      */
     @SuppressLint("SetTextI18n")
-    private void showTorrentDownloadDialog(String url, String name, int progress, boolean success) {
+    private void showTorrentDownloadDialog(TorrentDownloadMessage message, boolean success) {
         Context context = getEHContext();
         if (!isAdded()) {
             return;
         }
-        if (progress == 100 || !success) {
+        if (message.progress == 100 || !success) {
             if (torrentDownloadView == null) {
                 return;
             }
@@ -1927,7 +1908,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             Button leftButton = torrentDownloadView.findViewById(R.id.leader);
             Button rightButton = torrentDownloadView.findViewById(R.id.action);
 
-            path.setText(getString(R.string.download_torrent_path, url));
+            path.setText(getString(R.string.download_torrent_path, message.path));
 
             rightButton.setText(R.string.sure);
 
@@ -1937,7 +1918,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
                 leftButton.setText(R.string.open_directory);
                 leftButton.setOnClickListener(l -> {
                     dismissTorrentDialog();
-                    FileUtils.openAssignFolder(url, context);
+                    FileUtils.openAssignFolder(message.dir, context);
                 });
                 state.setText(getString(R.string.download_torrent_state) + getString(R.string.download_state_finish));
             } else {
@@ -1952,7 +1933,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
                 downLoadAlertDialog.setCancelable(true);
             }
         } else {
-            String progressString = progress + "%";
+            String progressString = message.progress + "%";
             if (downLoadAlertDialog != null && downLoadAlertDialog.isShowing()) {
                 if (downloadProgress != null) {
                     downloadProgress.setText(progressString);
@@ -1973,7 +1954,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
         }
 
         TextView tName = torrentDownloadView.findViewById(R.id.download_name);
-        tName.setText(name);
+        tName.setText(message.name);
         assert context != null;
         if (downLoadAlertDialog != null) {
             downLoadAlertDialog.show();
@@ -2004,15 +1985,16 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             TorrentDownloadMessage message = msg.getData().getParcelable("torrent_download_message");
             if (message.progress == 200) {
                 dismissTorrentDialog();
-                Toast.makeText(getEHContext(), R.string.torrent_exist, Toast.LENGTH_SHORT).show();
+                String text = mContext.getString(R.string.torrent_exist, message.path);
+                Toast.makeText(getEHContext(), text, Toast.LENGTH_SHORT).show();
                 return;
             }
             if (message.failed) {
                 dismissTorrentDialog();
-                showTorrentDownloadDialog(message.path, message.name, message.progress, false);
+                showTorrentDownloadDialog(message, false);
                 return;
             }
-            showTorrentDownloadDialog(message.path, message.name, message.progress, true);
+            showTorrentDownloadDialog(message, true);
         }
     }
 
@@ -2325,7 +2307,7 @@ public class GalleryDetailScene extends BaseScene implements View.OnClickListene
             try {
                 String url = mTorrentList[position].first;
                 String name = mTorrentList[position].second + ".torrent";
-                String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath()+"/"+TORRENT_PATH;
+                String path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getPath() + "/" + TORRENT_PATH;
                 DownloadTorrentManager downloadTorrentManager = DownloadTorrentManager.get(okHttpClient);
                 if (!EhApplication.addDownloadTorrent(context, url)) {
                     Toast.makeText(context, R.string.downloading, Toast.LENGTH_LONG).show();

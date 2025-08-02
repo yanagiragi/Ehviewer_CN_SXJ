@@ -126,7 +126,9 @@
     <!-- Update -->
     <string name="new_version">新版本</string>
     <string name="update">更新</string>
+    <string name="update_fail">检查更新失败</string>
     <string name="update_plain">版本：%1$s\n大小：%2$s\n\n%3$s</string>
+    <string name="update_fail_info">点击 是 跳转至Github主页</string>
     <string name="update_to_date">EhViewer 已是最新版本</string>
     <string name="no_updates_available">已是最新版本</string>
     <string name="update_to">更新至</string>
@@ -468,8 +470,8 @@
     <string name="settings_eh_sign_out_tip">已登出，重新啟動程式以再次登入</string>
     <string name="settings_eh_identity_cookies">身份識別 Cookie</string>
     <string name="settings_eh_identity_cookies_summary">可用於登入</string>
-    <string name="settings_eh_lock_cookies_igneous">鎖定 Cookie igneous 欄位</string>
-    <string name="settings_eh_lock_cookies_igneous_summary">除非在特殊情況下，不建議啟用。</string>
+<!--    <string name="settings_eh_lock_cookies_igneous">鎖定 Cookie igneous 欄位</string>-->
+<!--    <string name="settings_eh_lock_cookies_igneous_summary">除非在特殊情況下，不建議啟用。</string>-->
     <string name="settings_eh_identity_cookies_signed">身份 Cookie 可用於登入該帳號。&lt;br&gt;&lt;b&gt;請注意資料安全&lt;/b&gt;&lt;br&gt;&lt;br&gt;%s</string>
     <string name="settings_eh_identity_cookies_tourist">未登入</string>
     <string name="settings_eh_identity_cookies_copy">複製</string>
@@ -823,7 +825,7 @@
     <string name="try_again">再試一次</string>
     <string name="open_directory">開啟目錄</string>
     <string name="downloading">正在下載…… 請稍後再試</string>
-    <string name="torrent_exist">檔案已存在</string>
+    <string name="torrent_exist">檔案已存在: %s</string>
 
     <!--  訂閱服務  -->
     <string name="subscription_watched">訂閱</string>
@@ -833,6 +835,7 @@
     <string name="add_tag_dialog_title">添加標籤</string>
     <string name="tag_title">標籤欄</string>
     <string name="empty_subscription">訂閱內容為空</string>
+    <string name="subscription_success">%s成功</string>
 
     <string name="yes">是</string>
     <string name="cancel">取消</string>
@@ -883,6 +886,7 @@
     <string name="from_hentai_home">%s 來自 Hentai@Home</string>
     <string name="current_moderation_power">當前願力 %s</string>
     <string name="reset_cost">花費 %s 重置</string>
+    <string name="ip_base_limits">IP基础限制</string>
     <string name="limit_unneed_reset">目前無需重置配額，請重新整理後再試試~</string>
     <string name="settings_eh_list_show_read_progress">Show reading progress</string>
     <string name="settings_eh_list_show_read_progress_summary">Display reading progress for each gallery in detail list mode</string>
@@ -914,5 +918,7 @@
     <string name="order">Order</string>
     <string name="sort_by_pub_time">Published Time</string>
     <string name="sort_by_fav_time">Favorited Time</string>
+    <string name="settings_eh_sign_out_restart">Automatically restarting for you, please wait</string>
+    <string name="settings_eh_show_gallery_rating">Show Gallery Stars</string>
 
 </resources>

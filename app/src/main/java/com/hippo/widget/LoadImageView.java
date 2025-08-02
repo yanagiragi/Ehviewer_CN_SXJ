@@ -43,6 +43,7 @@ import androidx.annotation.Nullable;
 
 import com.hippo.conaco.Conaco;
 import com.hippo.conaco.ConacoTask;
+import com.hippo.conaco.DataContainer;
 import com.hippo.conaco.Unikery;
 import com.hippo.drawable.PreciselyClipDrawable;
 import com.hippo.ehviewer.EhApplication;
@@ -55,6 +56,7 @@ import com.hippo.ehviewer.client.EhRequest;
 import com.hippo.ehviewer.client.EhUrl;
 import com.hippo.ehviewer.client.data.GalleryDetail;
 import com.hippo.ehviewer.dao.DownloadInfo;
+import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
 import com.hippo.io.FileInputStreamPipe;
 import com.hippo.lib.image.Image;
 import com.hippo.lib.yorozuya.IntIdGenerator;
@@ -167,8 +169,7 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     private Drawable getImageDrawable() {
         Drawable drawable = getDrawable();
-        if (drawable instanceof TransitionDrawable) {
-            TransitionDrawable transitionDrawable = (TransitionDrawable) drawable;
+        if (drawable instanceof TransitionDrawable transitionDrawable) {
             if (transitionDrawable.getNumberOfLayers() == 2) {
                 drawable = transitionDrawable.getDrawable(1);
             }
@@ -241,7 +242,13 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
         load(key, url, useNetwork);
     }
 
+
+
     public void load(String key, String url, boolean useNetwork) {
+        load(key,url,null,useNetwork);
+    }
+
+    public void load(String key, String url, DataContainer dataContainer, boolean useNetwork) {
         if (url == null || key == null) {
             return;
         }
@@ -282,6 +289,9 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
                 .setKey(key)
                 .setUrl(url)
                 .setUseNetwork(useNetwork);
+        if (dataContainer!=null){
+            builder.setDataContainer(dataContainer);
+        }
 
         mConaco.load(builder);
     }
@@ -453,6 +463,8 @@ public class LoadImageView extends FixedAspectImageView implements Unikery<Image
 
     public void onPreSetImageResource(int resId, boolean isTarget) {
     }
+
+
 
     @IntDef({RETRY_TYPE_NONE, RETRY_TYPE_CLICK, RETRY_TYPE_LONG_CLICK})
     @Retention(RetentionPolicy.SOURCE)

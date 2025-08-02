@@ -64,6 +64,8 @@ import com.github.amlcurran.showcaseview.targets.ViewTarget;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.hippo.android.resource.AttrResources;
 import com.hippo.app.CheckBoxDialogBuilder;
+import com.hippo.conaco.DataContainer;
+import com.hippo.conaco.ProgressNotifier;
 import com.hippo.drawable.AddDeleteDrawable;
 import com.hippo.drawerlayout.DrawerLayout;
 import com.hippo.easyrecyclerview.EasyRecyclerView;
@@ -96,8 +98,11 @@ import com.hippo.ehviewer.ui.scene.gallery.detail.GalleryDetailScene;
 import com.hippo.ehviewer.ui.scene.gallery.list.EnterGalleryDetailTransaction;
 import com.hippo.ehviewer.widget.SearchBar;
 import com.hippo.ehviewer.widget.SimpleRatingView;
+import com.hippo.io.UniFileInputStreamPipe;
+import com.hippo.lib.yorozuya.IOUtils;
 import com.hippo.ripple.Ripple;
 import com.hippo.scene.Announcer;
+import com.hippo.streampipe.InputStreamPipe;
 import com.hippo.unifile.UniFile;
 import com.hippo.util.DrawableManager;
 import com.hippo.util.IoThreadPoolExecutor;
@@ -108,11 +113,10 @@ import com.hippo.widget.LoadImageView;
 import com.hippo.widget.ProgressView;
 import com.hippo.widget.SearchBarMover;
 import com.hippo.widget.recyclerview.AutoStaggeredGridLayoutManager;
-import com.hippo.yorozuya.AssertUtils;
-import com.hippo.yorozuya.FileUtils;
-import com.hippo.yorozuya.IOUtils;
-import com.hippo.yorozuya.ObjectUtils;
-import com.hippo.yorozuya.ViewUtils;
+import com.hippo.lib.yorozuya.AssertUtils;
+import com.hippo.lib.yorozuya.FileUtils;
+import com.hippo.lib.yorozuya.ObjectUtils;
+import com.hippo.lib.yorozuya.ViewUtils;
 import com.hippo.lib.yorozuya.collect.LongList;
 import com.sxj.paginationlib.PaginationIndicator;
 import com.google.firebase.crashlytics.FirebaseCrashlytics;
@@ -124,6 +128,8 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -962,26 +968,6 @@ public class DownloadsScene extends ToolbarScene
         }
     }
 
-    private void viewRandom() {
-        List<DownloadInfo> list = mList;
-        if (list == null) {
-            return;
-        }
-        int position = (int) (Math.random() * list.size());
-        if (position < 0 || position >= list.size()) {
-            return ;
-        }
-        Activity activity = getActivity2();
-        if (null == activity || null == mRecyclerView) {
-            return;
-        }
-
-        Intent intent = new Intent(activity, GalleryActivity.class);
-        intent.setAction(GalleryActivity.ACTION_EH);
-        intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(position));
-        galleryActivityLauncher.launch(intent);
-    }
-
     private void exportGalleryInfo() {
         String output = "[";
         for (var i = 0; i < mList.size(); ++i) {
@@ -1013,6 +999,27 @@ public class DownloadsScene extends ToolbarScene
 
         var readablePath = file.getPath().replace(Environment.getExternalStorageDirectory().getPath(), "");
         Toast.makeText(getContext(), "Exported to " + readablePath, Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void viewRandom() {
+        List<DownloadInfo> list = mList;
+        if (list == null) {
+            return;
+        }
+        int position = (int) (Math.random() * list.size());
+        if (position < 0 || position >= list.size()) {
+            return ;
+        }
+        Activity activity = getActivity2();
+        if (null == activity || null == mRecyclerView) {
+            return;
+        }
+
+        Intent intent = new Intent(activity, GalleryActivity.class);
+        intent.setAction(GalleryActivity.ACTION_EH);
+        intent.putExtra(GalleryActivity.KEY_GALLERY_INFO, list.get(position));
+        galleryActivityLauncher.launch(intent);
     }
 
     @Override
@@ -1703,7 +1710,8 @@ public class DownloadsScene extends ToolbarScene
 
                 String title = EhUtils.getSuitableTitle(info);
 
-                holder.thumb.load(EhCacheKeyFactory.getThumbKey(info.gid), info.thumb, true);
+//                holder.thumb.load(EhCacheKeyFactory.getThumbKey(info.gid), info.thumb, true);
+                holder.thumb.load(EhCacheKeyFactory.getThumbKey(info.gid), info.thumb, new ThumbDataContainer(info), true);
 
                 holder.title.setText(title);
                 holder.uploader.setText(info.uploader);
@@ -1780,6 +1788,73 @@ public class DownloadsScene extends ToolbarScene
         public void onItemCheckedStateChanged(EasyRecyclerView view, int position, long id, boolean checked) {
             if (view.getCheckedItemCount() == 0) {
                 view.outOfCustomChoiceMode();
+            }
+        }
+    }
+
+    private class ThumbDataContainer implements DataContainer {
+
+        private final DownloadInfo mInfo;
+        @Nullable
+        private UniFile mFile;
+
+        public ThumbDataContainer(@NonNull DownloadInfo info) {
+            mInfo = info;
+        }
+
+        private void ensureFile() {
+            if (mFile == null) {
+                UniFile dir = getGalleryDownloadDir(mInfo);
+                if (dir != null && dir.isDirectory()) {
+                    mFile = dir.createFile(".thumb");
+                }
+            }
+        }
+
+        @Override
+        public boolean isEnabled() {
+            ensureFile();
+            return mFile != null;
+        }
+
+        @Override
+        public void onUrlMoved(String requestUrl, String responseUrl) {
+        }
+
+        @Override
+        public boolean save(InputStream is, long length, String mediaType, ProgressNotifier notify) {
+            ensureFile();
+            if (mFile == null) {
+                return false;
+            }
+
+            OutputStream os = null;
+            try {
+                os = mFile.openOutputStream();
+                IOUtils.copy(is, os);
+                return true;
+            } catch (IOException e) {
+                e.printStackTrace();
+                return false;
+            } finally {
+                IOUtils.closeQuietly(os);
+            }
+        }
+
+        @Override
+        public InputStreamPipe get() {
+            ensureFile();
+            if (mFile != null) {
+                return new UniFileInputStreamPipe(mFile);
+            } else {
+                return null;
+            }
+        }
+
+        @Override
+        public void remove() {
+            if (mFile != null) {
+                mFile.delete();
             }
         }
     }

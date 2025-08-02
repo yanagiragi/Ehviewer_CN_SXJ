@@ -79,13 +79,12 @@ import com.hippo.ehviewer.ui.GalleryActivity;
 import com.hippo.ehviewer.ui.MainActivity;
 import com.hippo.ehviewer.ui.scene.BaseScene;
 import com.hippo.ehviewer.ui.scene.download.DownloadsScene;
-import com.hippo.ehviewer.ui.scene.FavoritesScene;
+import com.hippo.ehviewer.ui.scene.gallery.list.FavoritesScene;
 import com.hippo.ehviewer.ui.scene.GalleryInfoScene;
 import com.hippo.ehviewer.ui.scene.GalleryPreviewsScene;
 import com.hippo.ehviewer.ui.scene.history.HistoryScene;
 import com.hippo.ehviewer.ui.scene.TransitionNameFactory;
 import com.hippo.ehviewer.ui.scene.gallery.list.GalleryListScene;
-import com.hippo.ehviewer.util.AppCenterAnalytics;
 import com.hippo.ehviewer.util.ClipboardUtil;
 import com.hippo.reveal.ViewAnimationUtils;
 import com.hippo.ripple.Ripple;
@@ -307,7 +306,6 @@ public class ExternalGalleryDetailScene extends BaseScene implements View.OnClic
             properties = new HashMap<>();
             properties.put("Title", mGalleryInfo.title);
             properties.put("Time", dateFormat.format(date));
-            AppCenterAnalytics.trackEvent("进入画廊详情页", properties);
         }
     }
 

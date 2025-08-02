@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "org.jetbrains.kotlin.plugin.parcelize"
+apply plugin: "com.jaredsburrows.license"
 if (file('google-services.json').exists()) {
     apply plugin: 'com.google.gms.google-services'
     apply plugin: 'com.google.firebase.crashlytics'
-//    apply plugin: 'io.fabric'
 }
 
 android {
@@ -16,12 +16,12 @@ android {
 
     flavorDimensions "distribute"
     productFlavors {
-        appCenter {
+        appRelease {
             dimension "distribute"
         }
-        googlePlay {
-            dimension "distribute"
-        }
+//        googlePlay {
+//            dimension "distribute"
+//        }
     }
 
     defaultConfig {
@@ -30,9 +30,9 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 29
         versionCode 111
-        versionName "1.9.9.4"
+        versionName "1.9.9.16"
         vectorDrawables.useSupportLibrary = true
-        resConfigs 'zh', 'zh-rCN', 'zh-rHK', 'zh-rTW', 'es', 'ja', 'ko', 'fr', 'de', 'th'
+        resourceConfigurations += ['zh', 'zh-rCN', 'zh-rHK', 'zh-rTW', 'es', 'ja', 'ko', 'fr', 'de', 'th']
         testOptions.unitTests.includeAndroidResources = true
         multiDexEnabled true
         ndk {
@@ -77,8 +77,8 @@ android {
 //    }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     buildFeatures {
@@ -87,29 +87,13 @@ android {
 
 }
 
-//task copyNotice(type: Copy) {
-//    from '../NOTICE.html'
-//    into './src/main/assets'
-//    finalizedBy ":daogenerator:executeDaoGenerator"
-//}
-
 //tasks.withType(JavaCompile) {
 //    task -> task.dependsOn copyNotice
 //}
 
-clean {
-    delete file('src/main/assets/NOTICE.html').absolutePath
-}
-
 dependencies {
 //    测试工具
 //    debugCompileOnly 'com.gu.android:toolargetool:0.3.0'
-
-    // 应用服务分发
-    def appCenterSdkVersion = '4.4.5'
-    implementation "com.microsoft.appcenter:appcenter-analytics:${appCenterSdkVersion}"
-//    implementation "com.microsoft.appcenter:appcenter-crashes:${appCenterSdkVersion}"
-    implementation "com.microsoft.appcenter:appcenter-distribute:${appCenterSdkVersion}"
 
     implementation 'com.google.android.material:material:1.12.0'
 
@@ -119,8 +103,8 @@ dependencies {
 
     // Add the dependencies for the Crashlytics and Analytics libraries
     // When using the BoM, you don't specify versions in Firebase library dependencies
-    implementation 'com.google.firebase:firebase-crashlytics:19.2.1'
-    implementation 'com.google.firebase:firebase-analytics:22.1.2'
+    implementation 'com.google.firebase:firebase-crashlytics:19.4.2'
+    implementation 'com.google.firebase:firebase-analytics:22.4.0'
 //    implementation 'com.google.firebase:firebase-analytics:21.5.1'
 
     implementation fileTree(include: ['*.jar'], dir: 'libs')
@@ -129,12 +113,12 @@ dependencies {
     implementation 'androidx.biometric:biometric:1.2.0-alpha01'
     implementation "androidx.browser:browser:1.3.0"
     implementation 'androidx.cardview:cardview:1.0.0'
-    implementation "androidx.fragment:fragment:1.8.5"
+    implementation "androidx.fragment:fragment:1.8.6"
     implementation "androidx.preference:preference-ktx:1.2.1"
     implementation 'androidx.recyclerview:recyclerview:1.2.0'
     implementation 'org.conscrypt:conscrypt-android:2.5.1'
     // https://mvnrepository.com/artifact/androidx.core/core-ktx
-    implementation 'androidx.core:core-ktx:1.13.1'
+    implementation 'androidx.core:core-ktx:1.15.0'
 //    implementation 'com.android.support:recyclerview-v7:25.0.1'
 
 //     https://mvnrepository.com/artifact/com.fpliu.ndk.pkg.prefab.android.21/libpng
@@ -146,7 +130,6 @@ dependencies {
     implementation 'com.alibaba:fastjson:1.2.83'
 
     implementation 'com.android.support:multidex:1.0.3'
-//    implementation 'com.github.bumptech.glide:glide:4.16.0'
     /**
      * 原始依赖
      */
@@ -154,29 +137,14 @@ dependencies {
     implementation 'com.github.seven332:android-recaptcha:2bbb3459a8'
     implementation 'com.github.seven332:android-resource:0.1.0'
     implementation 'com.github.seven332:animator:0.1.0'
-//    implementation 'com.github.seven332:beerbelly:0.2.0'
-//    implementation 'com.github.seven332:conaco:0.2.0'
-//    implementation 'com.github.seven332:beerbelly:0.1.4'
-//    implementation 'com.github.seven332:conaco:0.1.5-eh'
     implementation 'com.github.seven332:drawerlayout:ea2bb388f0'
     implementation 'com.github.seven332:easyrecyclerview:0.1.1'
 //    分页组件
     implementation 'com.github.xiaojieonly:Pagination_Sxj:8d2c34d8f53927aeaa1d405d8653969379cb37ec'
-//    implementation 'com.github.xiaojieonly:Pagination_Sxj:d8253ceefd6b02b73f9e9485cbb7dd89a6b89ba3'
-//    为方便扩展代码直接迁移至项目内
-//    implementation 'com.github.seven332:glgallery:0.1.2'
-//    implementation 'com.github.seven332:glview:0.1.0'
-//    implementation 'com.github.seven332:glview-image:0.1.0'
-//    implementation 'com.github.seven332:image:0.1.12'
     implementation 'com.github.seven332:hotspot:0.1.0'
     implementation 'com.github.seven332:refreshlayout:0.1.0'
     implementation 'com.github.seven332:ripple:0.1.2'
     implementation 'com.github.seven332:streampipe:0.1.0'
-//    implementation 'com.github.seven332:tuxiang:0.1.6'
-//    implementation 'com.github.seven332:unifile:9ec57bcd8f'
-//    implementation 'com.github.seven332:yorozuya:0.1.2'
-//    implementation 'com.github.seven332:yorozuya-thread:0.1.1'
-//    implementation 'com.github.seven332:yorozuya-collect:0.1.4'
 
 
     implementation 'com.h6ah4i.android.widget.advrecyclerview:advrecyclerview:1.0.0'
@@ -186,9 +154,6 @@ dependencies {
     // 还是旧版稳定好用
     implementation 'com.squareup.okhttp3:okhttp:3.14.7'
     implementation 'com.squareup.okhttp3:okhttp-dnsoverhttps:3.14.7'
-//    https://github.com/acsbendi/Android-Request-Inspector-WebView
-//    implementation 'com.github.acsbendi:Android-Request-Inspector-WebView:1.0.5'
-//    https://github.com/xiaojieonly/Android-Request-Inspector-WebView
     implementation 'com.github.xiaojieonly:Android-Request-Inspector-WebView:70403bb'
 
     implementation 'org.ccil.cowan.tagsoup:tagsoup:1.2.1'
@@ -197,19 +162,21 @@ dependencies {
     implementation 'org.jsoup:jsoup:1.15.3'
 
     //事件通知
-    implementation 'org.greenrobot:eventbus:3.1.1'
+    implementation 'org.greenrobot:eventbus:3.3.1'
+    //loading组件
+    implementation 'com.github.ybq:Android-SpinKit:1.4.0'
 
 
-    testImplementation 'junit:junit:4.8.2'
+    testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.2.1'
     testImplementation 'org.jooq:joor:0.9.6'
 
     // https://mvnrepository.com/artifact/androidx.webkit/webkit
-    runtimeOnly group: 'androidx.webkit', name: 'webkit', version: '1.4.0'
+    runtimeOnly group: 'androidx.webkit', name: 'webkit', version: '1.13.0'
 
 }
 
-configurations.all {
+configurations.configureEach {
     resolutionStrategy {
         force 'com.github.seven332:glgallery:25893283ca'
         force 'com.github.seven332:glview:ba6aee61d7'
@@ -218,4 +185,8 @@ configurations.all {
 
         exclude group: 'com.github.seven332', module: 'okhttp'
     }
+}
+
+// 兼容舊版 IDE / 腳本還會呼叫 testClasses 的情況
+tasks.register("testClasses") {
 }
